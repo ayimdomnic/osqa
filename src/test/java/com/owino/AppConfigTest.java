@@ -73,21 +73,17 @@ public class AppConfigTest {
     public void shouldComposeModuleListTest() {
         Result<Void> result = OSQAConfig.loadModulesListFile();
         assertThat(result instanceof Result.Success).isTrue();
-        Result<List<OSQAModule>> loadModulesResult = OSQAConfig.loadModules(OSQAConfig.MODULE_FILE);
-        assertThat(loadModulesResult instanceof Result.Success<List<OSQAModule>>).isTrue();
-        var modules = ((Result.Success<List<OSQAModule>>) loadModulesResult).value();
-        assertThat(modules).isNotEmpty();
-        Optional<OSQAModule> calendarAndNavModule = modules
-                .stream()
-                .filter(e -> e.name().equals("Core Calendar and Navigation"))
-                .findFirst();
-        assertThat(calendarAndNavModule).isNotEmpty();
-        assertThat(calendarAndNavModule.get()).isNotNull();
-        assertThat(calendarAndNavModule.get().uuid()).isEqualTo("a76b4d46-e7df-43ea-afec-221b899ae527");
-        assertThat(calendarAndNavModule.get().name()).isEqualTo("Core Calendar and Navigation");
-        assertThat(calendarAndNavModule.get().description()).isEqualTo("Validates basic calendar rendering, navigation controls, and fundamental UI elements.");
-        assertThat(calendarAndNavModule.get().priority()).isEqualTo("Critical");
-        List<OSQATestCase> testCases = calendarAndNavModule.get().testCases();
+        Result<OSQAModule> loadModulesResult = OSQAConfig.loadModule(OSQAConfig.MODULE_FILE);
+        assertThat(loadModulesResult instanceof Result.Success<OSQAModule>).isTrue();
+        var calendarAndNavModule = ((Result.Success<OSQAModule>) loadModulesResult).value();
+        assertThat(calendarAndNavModule).isNotNull();
+        assertThat(calendarAndNavModule);
+        assertThat(calendarAndNavModule).isNotNull();
+        assertThat(calendarAndNavModule.uuid()).isEqualTo("a76b4d46-e7df-43ea-afec-221b899ae527");
+        assertThat(calendarAndNavModule.name()).isEqualTo("Core Calendar and Navigation");
+        assertThat(calendarAndNavModule.description()).isEqualTo("Validates basic calendar rendering, navigation controls, and fundamental UI elements.");
+        assertThat(calendarAndNavModule.priority()).isEqualTo("Critical");
+        List<OSQATestCase> testCases = calendarAndNavModule.testCases();
         assertThat(testCases).isNotNull();
         assertThat(testCases).isNotEmpty();
         Optional<OSQATestCase> testCase = testCases.stream().findFirst();
@@ -111,6 +107,7 @@ public class AppConfigTest {
                 "Task Completion Sync",
                 TEST_CASE_SPEC_FILE);
         Result<OSQATestSpec> result = OSQAConfig.loadTestCaseSpec(testCase);
+        IO.println(result);
         assertThat(result instanceof Result.Success<OSQATestSpec>).isTrue();
         OSQATestSpec actualTestSpec = ((Result.Success<OSQATestSpec>) result).value();
         assertThat(actualTestSpec).isNotNull();
@@ -135,7 +132,7 @@ public class AppConfigTest {
         }
         Result<Void> result = OSQAConfig.loadModulesListFile();
         assertThat(result instanceof Result.Success).isTrue();
-        assertThatThrownBy(() -> OSQAConfig.loadModules(OSQAConfig.MODULE_FILE))
+        assertThatThrownBy(() -> OSQAConfig.loadModule(OSQAConfig.MODULE_FILE))
                 .isInstanceOf(ValueInstantiationException.class);
     }
     @Test
@@ -172,6 +169,65 @@ public class AppConfigTest {
         IO.println(path.getFileName());
         Files.deleteIfExists(((Result.Success<Path>) result).value());
     }
+    @Test
+    public void shouldFindAndListModuleConfFilesTest() throws IOException {
+        var uuid = "5833312b-7c84-4e6d-a067-622eb2156761";
+        var moduleTitle = "Launch application";
+        var testSpec = new OSQATestCase(uuid,"testcase","specfile.json");
+        var module = new OSQAModule(uuid,moduleTitle,"Module notes","Critical",List.of(testSpec));
+        var result = OSQAConfig.writeModule(Paths.get(OSQAConfig.MODULE_DIR),module);
+        IO.println(result);
+        assertThat(result instanceof Result.Success<Path>).isTrue();
+        var path = ((Result.Success<Path>) result).value();
+        assertThat(Files.exists(path)).isTrue();
+        Result<List<OSQAModule>> modulesResult = OSQAConfig.listModules(Paths.get(OSQAConfig.MODULE_DIR));
+        IO.println(modulesResult);
+        assertThat(modulesResult instanceof Result.Success<List<OSQAModule>>).isTrue();
+        var modules = ((Result.Success<List<OSQAModule>>) modulesResult).value();
+        assertThat(modules).isNotEmpty();
+        assertThat(modules.getFirst()).isNotNull();
+        assertThat(modules.getFirst().name()).isNotEmpty();
+        assertThat(modules.getFirst().description()).isNotEmpty();
+        Files.deleteIfExists(path);
+    }
+    @Test
+    public void shouldOverwriteSpecFileTest(){
+        var uuid = "5833312b-7c84-4e6d-a067-622eb2156761";
+        var verification = new OSQAVerification(0,"verification step");
+        var specification = new OSQATestSpec(uuid,"Launch application",List.of(verification));
+        var timestamp = LocalDateTime.of(2000,11,21,10,55,30);
+        var specFile = OSQAConfig.timestampedName(timestamp,"json");
+        var appDir = Paths.get(OSQAConfig.MODULE_DIR);
+        var filePath = appDir.toAbsolutePath().toString().concat("/").concat(specFile);
+        var testCase = new OSQATestCase(uuid,"Test Case",filePath);
+        var result = OSQAConfig.writeSpecFile(appDir,specification,specFile);
+        IO.println(result);
+        assertThat(result instanceof Result.Success<Void>).isTrue();
+        var preOverwriteTestSpecLoadResult = OSQAConfig.loadTestCaseSpec(testCase);
+        IO.println("load pre overwrite test spec: result : " + preOverwriteTestSpecLoadResult);
+        assertThat(preOverwriteTestSpecLoadResult instanceof Result.Success<OSQATestSpec>).isTrue();
+        OSQATestSpec preOverwriteSpec = ((Result.Success<OSQATestSpec>) preOverwriteTestSpecLoadResult).value();
+        assertThat(preOverwriteSpec).isNotNull();
+        assertThat(preOverwriteSpec.verifications().size()).isEqualTo(1);
+        assertThat(preOverwriteSpec.verifications().getFirst()).isNotNull();
+        assertThat(preOverwriteSpec.verifications().getFirst().order()).isEqualTo(verification.order());
+        assertThat(preOverwriteSpec.verifications().getFirst().description()).isEqualTo(verification.description());
+
+        var newVerification = new OSQAVerification(0,"verification step");
+        var updatedSpec = new OSQATestSpec(uuid,"Launch application",List.of(verification,newVerification));
+
+        var overwriteResult = OSQAConfig.overwriteSpecFile(updatedSpec,testCase);
+        assertThat(overwriteResult instanceof Result.Success<Void>).isTrue();
+        var testSpecLoadResult = OSQAConfig.loadTestCaseSpec(testCase);
+        IO.println(result);
+        assertThat(testSpecLoadResult instanceof Result.Success<OSQATestSpec>).isTrue();
+        OSQATestSpec specOverwrite = ((Result.Success<OSQATestSpec>) testSpecLoadResult).value();
+        assertThat(specOverwrite).isNotNull();
+        assertThat(specOverwrite.action()).isEqualTo(updatedSpec.action());
+        assertThat(specOverwrite.verifications().size()).isEqualTo(updatedSpec.verifications().size());
+        assertThat(specOverwrite.verifications().size()).isGreaterThan(1);
+        assertThat(specOverwrite.verifications().size()).isEqualTo(2);
+    }
     @AfterEach
     public void tearDown() throws IOException {
         deleteAppDataFolder();
@@ -179,20 +235,20 @@ public class AppConfigTest {
     private static void deleteAppDataFolder() throws IOException {
         var directory = Paths.get("data");
         if (Files.exists(directory)){
-            Files.walk(directory)
-                    .sorted(Comparator.reverseOrder())
-                    .forEach(path -> {
-                        try {
-                            Files.deleteIfExists(path);
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
+            try(var dirWalk = Files.walk(directory)){
+                dirWalk.sorted(Comparator.reverseOrder())
+                        .forEach(path -> {
+                            try {
+                                Files.deleteIfExists(path);
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+            }
         }
     }
     private final String modulesJson = """
-            [
-              {
+            {
                 "uuid": "a76b4d46-e7df-43ea-afec-221b899ae527",
                 "name": "Core Calendar and Navigation",
                 "description": "Validates basic calendar rendering, navigation controls, and fundamental UI elements.",
@@ -204,25 +260,10 @@ public class AppConfigTest {
                     "specFile": "tc-smoke-001.json"
                   }
                 ]
-              },
-              {
-                "uuid": "9721cac2-bdac-4bbc-85bf-0ee136adbd3b",
-                "name": "Basic Recurrence Creation",
-                "description": "Tests the fundamental creation of daily, weekly, and yearly recurring tasks and their initial placement on the calendar.",
-                "priority": "Critical",
-                "testCases": [
-                  {
-                    "uuid": "8c730a47-cd79-4a6a-8e1a-b6463de3b882",
-                    "title": "Smoke - Create Daily Task",
-                    "specFile": "tc-smoke-001.json"
-                  }
-                ]
               }
-            ]
             """;
     private final String invalidModulesJson = """
-            [
-              {
+            {
                 "uuid": "uuid",
                 "name": "",
                 "description": "",
@@ -234,21 +275,7 @@ public class AppConfigTest {
                     "specFile": "tc-smoke-001.json"
                   }
                 ]
-              },
-              {
-                "uuid": "uuid",
-                "name": "",
-                "description": "",
-                "priority": "",
-                "testCases": [
-                  {
-                    "uuid": "",
-                    "title": "",
-                    "specFile": ""
-                  }
-                ]
               }
-            ]
             """;
     private final String testCaseSpecJson = """
             {

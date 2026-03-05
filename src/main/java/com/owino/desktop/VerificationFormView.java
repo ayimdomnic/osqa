@@ -30,10 +30,12 @@ import javafx.scene.layout.Background;
 import javafx.scene.layout.BorderPane;
 import tools.jackson.databind.ObjectMapper;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 public class VerificationFormView extends ScrollPane {
     private final List<OSQAModel.OSQATestCase> testCases = new ArrayList<>();
@@ -41,6 +43,7 @@ public class VerificationFormView extends ScrollPane {
     private static final Insets FIELD_MARGIN = new Insets(6,12,12,12);
     private TextArea verificationField;
     private TextArea userActionField;
+    private TextField moduleTitleTextField;
     public VerificationFormView(){
         var moduleForm = initModuleForm();
         setContent(moduleForm);
@@ -61,7 +64,7 @@ public class VerificationFormView extends ScrollPane {
 
         var moduleDetailsContainer = new VBox();
         var moduleTitleText = new Text("Test Name:");
-        var moduleTitleTextField = new TextField();
+        moduleTitleTextField = new TextField();
         var descriptionText = new Text("Test Description:");
         var descriptionTextField = new TextField();
         moduleTitleText.setFont(Font.font(15));
@@ -87,15 +90,23 @@ public class VerificationFormView extends ScrollPane {
         addTestCaseForm(formContainer);
         saveButton.setOnAction(_ -> {
             var testCaseTitle = "testcase";
-            var specFile = testCaseTitle + OSQAConfig.timestampedName(LocalDateTime.now(),"json");
-            var testCase = new OSQAModel.OSQATestCase(UUID.randomUUID().toString(),testCaseTitle,specFile);
-            var verification = new OSQAModel.OSQAVerification(0,verificationField.getText());
-            var specification = new OSQAModel.OSQATestSpec(UUID.randomUUID().toString(),userActionField.getText(),List.of(verification));
-            var appDirResult = SettingDao.getAppDataDir();
-            if (appDirResult instanceof Result.Success<Path>(Path appDir)){
+            Optional<Path> optionalAppDir = switch (SettingDao.getAppDataDir()){
+                case Result.Success<Path> (Path path) -> Optional.of(path);
+                case Result.Failure<Path> failure -> {
+                    IO.println("Failed to load app dir " + failure.error().getLocalizedMessage());
+                    yield Optional.empty();
+                }
+            };
+            if (optionalAppDir.isPresent()){
+                var appDir = optionalAppDir.get();
+                var specFile = testCaseTitle + OSQAConfig.timestampedName(LocalDateTime.now(),"json");
+                var filePath = appDir.toAbsolutePath().toString().concat("/").concat(specFile);
+                var testCase = new OSQAModel.OSQATestCase(UUID.randomUUID().toString(),testCaseTitle,filePath);
+                var verification = new OSQAModel.OSQAVerification(0,verificationField.getText());
+                var specification = new OSQAModel.OSQATestSpec(UUID.randomUUID().toString(),userActionField.getText(),List.of(verification));
                 OSQAConfig.writeSpecFile(appDir,specification,specFile);
                 testCases.add(testCase);
-                var moduleTitle = moduleTitleText.getText();
+                var moduleTitle = moduleTitleTextField.getText();
                 var moduleDescription = descriptionTextField.getText();
                 var module = new OSQAModel.OSQAModule(
                         UUID.randomUUID().toString(),
@@ -105,8 +116,14 @@ public class VerificationFormView extends ScrollPane {
                         testCases);
                 OSQAConfig.writeModule(appDir,module);
                 IO.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(module));
-
-                fireEvent(AppEvents.closeModuleFormEvent());
+                Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+                successAlert.setTitle("Success!");
+                successAlert.setContentText("Module created successfully!");
+                successAlert.showAndWait();
+                successAlert.setOnCloseRequest(event -> {
+                    fireEvent(AppEvents.closeModuleFormEvent());
+                    successAlert.close();
+                });
             }
         });
         return formContainer;

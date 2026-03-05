@@ -15,6 +15,7 @@ package com.owino.core;
  * You should have received a copy of the GNU General Public License
  * along with OSQA.  If not, see <https://www.gnu.org/licenses/>.
  */
+import java.nio.file.Path;
 import java.util.List;
 import java.util.regex.Pattern;
 public sealed interface OSQAModel {
@@ -71,7 +72,7 @@ public sealed interface OSQAModel {
         public OSQAVerification {
             var error = new StringBuilder();
             if (order < 0) error.append("Verification order must start with 0. < 0 order is not supported");
-            if (description.isBlank()) error.append("Verification order description is required");
+            if (description.isBlank()) error.append("Verification description is required");
             if (!error.isEmpty()) throw new OSQAValidationException(error.toString());
         }
     }
@@ -85,6 +86,14 @@ public sealed interface OSQAModel {
             var error = new StringBuilder();
             if (testSpecUuid.isBlank() || !uuidPattern.matcher(testSpecUuid).find()) error.append("Invalid test spec uuid\n");
             if (verification == null) error.append("Affected verification cannot be null");
+            if (!error.isEmpty()) throw new OSQAValidationException(error.toString());
+        }
+    }
+    record OSQAFilesDirTuple(String fileName, Path absPath) implements OSQAModel{
+        public OSQAFilesDirTuple {
+            var error = new StringBuilder();
+            if (fileName.isBlank()) error.append("Invalid file name");
+            if (absPath == null) error.append("Abs Path cannot be null");
             if (!error.isEmpty()) throw new OSQAValidationException(error.toString());
         }
     }

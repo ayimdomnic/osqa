@@ -105,21 +105,25 @@ $ git clone git@github.com:samuelowino/osqa.git
 $ cd osqa; mvn clean install ; cd target; java -jar osqa-1.0.jar
 ```
 
-<!-- coverage start -->
-## Code Coverage Report
 
-**Overall Coverage: 53.79% ✅**
+<!-- coverage start -->
+## 📊 Code Coverage Report
+
+**Overall Coverage: 39.40% ⚠️**
 
 | Metric      | Covered | Missed | Total | Coverage  |
 |-------------|---------|--------|-------|-----------|
-| INSTRUCTION | 632     | 543    | 1175  | 53.79% ✅  |
-| LINE        | 139     | 94     | 233   | 59.66% ✅  |
-| BRANCH      | 57      | 67     | 124   | 45.97% ⚠️ |
-| METHOD      | 21      | 11     | 32    | 65.62% ✅  |
-| CLASS       | 12      | 3      | 15    | 80.00% ✅  |
-| COMPLEXITY  | 32      | 63     | 95    | 33.68% ⚠️ |
+| INSTRUCTION | 961     | 1478   | 2439  | 39.40% ⚠️ |
+| LINE        | 211     | 311    | 522   | 40.42% ⚠️ |
+| BRANCH      | 74      | 94     | 168   | 44.05% ⚠️ |
+| METHOD      | 30      | 40     | 70    | 42.86% ⚠️ |
+| CLASS       | 13      | 9      | 22    | 59.09% ✅  |
+| COMPLEXITY  | 42      | 113    | 155   | 27.10% ⚠️ |
 
 ### 🚨 Least Tested Elements (coverage below 50%)
-- BRANCH: 45.97%
-- COMPLEXITY: 33.68%
+- INSTRUCTION: 39.40%
+- LINE: 40.42%
+- BRANCH: 44.05%
+- METHOD: 42.86%
+- COMPLEXITY: 27.10%
 <!-- coverage end -->

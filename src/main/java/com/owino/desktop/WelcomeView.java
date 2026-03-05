@@ -57,10 +57,8 @@ public class WelcomeView extends StackPane {
             directoryChooser.setTitle("Select config destination:");
             File selectedDir = directoryChooser.showDialog(window);
             if (selectedDir != null) {
-                IO.println("Selected Dir " + selectedDir.getAbsolutePath());
                 var result = SettingDao.setAppDataDir(selectedDir);
                 if (result instanceof Result.Success<Void>) {
-                    IO.println("Dir saved successfully!");
                     loadAppDir();
                 } else IO.println(result);
             }
@@ -69,7 +67,6 @@ public class WelcomeView extends StackPane {
             fireEvent(AppEvents.openModuleFormEvent(UUID.randomUUID().toString(),false));
         });
         addEventHandler(AppEvents.APP_DIR_LOADED_EVENT,event -> {
-            IO.println("received app dir update event...");
             if (event.appDir != null) {
                 appDataFolderLabel.setText("Config Folder: " + event.appDir.toAbsolutePath());
                 itemsContainer.getChildren().remove(appDataFolderLabel);

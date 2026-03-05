@@ -15,19 +15,21 @@ package com.owino.conf;
  * You should have received a copy of the GNU General Public License
  * along with OSQA.  If not, see <https://www.gnu.org/licenses/>.
  */
-import com.owino.core.Result;
-import java.io.IOException;
-import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
+import java.util.Comparator;
+import java.util.List;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.io.IOException;
+import java.nio.file.Files;
+import com.owino.core.OSQAModel;
+import com.owino.core.Result;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import com.owino.core.OSQAModel.OSQAModule;
+import tools.jackson.databind.ObjectMapper;
 import com.owino.core.OSQAModel.OSQATestCase;
 import com.owino.core.OSQAModel.OSQATestSpec;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
 public class OSQAConfig {
     public static final String MODULE_FILE = "data/modules.json";
     public static final String MODULE_DIR = "data";
@@ -45,10 +47,10 @@ public class OSQAConfig {
             return Result.failure("Failed to load modules list file: cause " + error.getLocalizedMessage());
         }
     }
-    public static Result<List<OSQAModule>> loadModules(String modulesFile) {
+    public static Result<OSQAModule> loadModule(String modulesFile) {
         try {
             var json = Files.readString(Paths.get(modulesFile));
-            var modules = new ObjectMapper().readValue(json, new TypeReference<List<OSQAModule>>() {});
+            var modules = new ObjectMapper().readValue(json, OSQAModule.class);
             return Result.success(modules);
         } catch (IOException error){
             return Result.failure(error.getLocalizedMessage());
@@ -61,6 +63,8 @@ public class OSQAConfig {
             var testSpec = new ObjectMapper().readValue(json,OSQATestSpec.class);
             return Result.success(testSpec);
         } catch (IOException error){
+            error.printStackTrace();
+            IO.println("failed to load test case spec from file " + testCase.specFile() + " Cause " + error.getLocalizedMessage());
             return Result.failure(error.getLocalizedMessage());
         }
     }
@@ -70,7 +74,7 @@ public class OSQAConfig {
     }
     public static Result<Void> writeSpecFile(Path appDataDir, OSQATestSpec specification, String specFile) {
         try {
-            var nameBuilder = new StringBuilder(appDataDir.toUri().getPath().toString());
+            var nameBuilder = new StringBuilder(appDataDir.toUri().getPath());
             nameBuilder.append("/");
             nameBuilder.append(specFile);
             var path = Paths.get(nameBuilder.toString());
@@ -84,7 +88,7 @@ public class OSQAConfig {
     public static Result<Path> writeModule(Path appDataDir,OSQAModule module){
         try {
             var prefix = "module";
-            var nameBuilder = new StringBuilder(appDataDir.toUri().getPath().toString());
+            var nameBuilder = new StringBuilder(appDataDir.toUri().getPath());
             nameBuilder.append("/");
             nameBuilder.append(prefix);
             nameBuilder.append(module.name().replaceAll(" ",""));
@@ -96,6 +100,41 @@ public class OSQAConfig {
             else return Result.failure("Failed to create modules conf file: Error unknown");
         } catch (IOException ex){
             return Result.failure("Failed to write modules spec file:" +ex.getLocalizedMessage());
+        }
+    }
+    public static Result<List<OSQAModule>> listModules(Path modulesDir) {
+        var folderExists = Files.exists(modulesDir);
+        if (!folderExists) return Result.failure("Failed to list modules, app dir does not exist");
+        try(var dirWalk = Files.walk(modulesDir)){
+            List<OSQAModule> modules = dirWalk.sorted(Comparator.reverseOrder())
+                    .map(file -> new OSQAModel.OSQAFilesDirTuple(file.getFileName().toString(),file))
+                    .filter(tuple -> tuple.fileName().startsWith("module") && tuple.fileName().endsWith(".json"))
+                    .map(tuple -> {
+                        try {
+                            var rawContents = Files.readString(tuple.absPath());
+                            if (rawContents.isBlank()) throw new RuntimeException("Failed to read modules, file is empty" + tuple.absPath());
+                            IO.println(rawContents);
+                            return new ObjectMapper().readValue(rawContents, OSQAModule.class);
+                        } catch (IOException ex){
+                            throw new RuntimeException("Failed to read modules file contents: " + ex.getLocalizedMessage());
+                        }
+                    })
+                    .toList();
+            if (modules.isEmpty()) return Result.failure("Failed to list modules: empty result");
+            else return Result.success(modules);
+        } catch (IOException err){
+            return Result.failure("Failed to read module list due to IO error: " + err.getLocalizedMessage());
+        }
+    }
+    public static Result<Void> overwriteSpecFile(OSQATestSpec updatedTestSpec,OSQATestCase parentTestCase) {
+        var json = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(updatedTestSpec);
+        try {
+            Files.writeString(Paths.get(parentTestCase.specFile()),json,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING);
+            return Result.success(null);
+        } catch (IOException error){
+            return Result.failure(error.getLocalizedMessage());
         }
     }
 }

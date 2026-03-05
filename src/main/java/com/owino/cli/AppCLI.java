@@ -17,7 +17,7 @@ package com.owino.cli;
  */
 import com.owino.conf.OSQAConfig;
 import com.owino.core.OSQAModel.OSQATestCase;
-import com.owino.core.OSQASession;
+import com.owino.conf.OSQASession;
 import com.owino.core.Result;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -67,11 +67,11 @@ public class AppCLI {
                     session.generateTestConfig();
             }
         } while (modulesFile.isEmpty());
-        var modules = switch (OSQAConfig.loadModules(modulesFile.get())) {
-            case Result.Success<List<OSQAModule>> success -> success.value();
+        var module = switch (OSQAConfig.loadModule(modulesFile.get())) {
+            case Result.Success<OSQAModule> (OSQAModule moduleValue) -> moduleValue;
             case Result.Failure (Throwable failure) -> throw new RuntimeException(failure);
         };
-        var selectedModule = switch (session.moduleSelection(modules)){
+        var selectedModule = switch (session.moduleSelection(List.of(module))){
             case Result.Success<OSQAModule> success -> success.value();
             case Result.Failure (Throwable failure) -> throw new RuntimeException(failure);
         };

@@ -37,6 +37,12 @@ public class DashboardView extends SplitPane {
             getItems().add(new MainMenuView());
             getItems().add(new WelcomeView(stage));
         });
+        addEventHandler(AppEvents.OPEN_MODULE_DETAILED_VIEW_EVENT, event -> {
+            getItems().removeFirst();
+            getItems().removeLast();
+            getItems().add(new MainMenuView());
+            getItems().add(new ModuleDetailedView(event.module));
+        });
         setOrientation(Orientation.HORIZONTAL);
         setDividerPositions(0.1f);
         setStyle("-fx-divider-color: #cccccc; -fx-divider-width: 1;");

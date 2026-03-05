@@ -27,7 +27,6 @@ public class AppGUI extends Application {
         stage.setMinHeight(800);
         stage.setMinWidth(1000);
         stage.setTitle("OSQA");
-        stage.setOnShown(_ -> IO.println("onAppear..."));
         stage.show();
     }
 }

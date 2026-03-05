@@ -1,4 +1,4 @@
-package com.owino.core;
+package com.owino.conf;
 /*
  * Copyright (C) 2026 Samuel Owino
  *
@@ -20,11 +20,14 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
-import com.owino.conf.OSQAConfig;
+
+import com.owino.core.OSQAGenerator;
+import com.owino.core.OSQAModel;
 import com.owino.core.OSQAModel.OSQAOutcome;
 import com.owino.core.OSQAModel.OSQATestSpec;
 import com.owino.core.OSQAModel.OSQAVerification;
 import com.owino.core.OSQAModel.OSQAModule;
+import com.owino.core.Result;
 import tools.jackson.databind.ObjectMapper;
 public record OSQASession(Scanner scanner) {
     public void generateTestConfig() {
