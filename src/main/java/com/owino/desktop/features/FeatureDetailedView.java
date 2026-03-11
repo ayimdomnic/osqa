@@ -1,4 +1,4 @@
-package com.owino.desktop;
+package com.owino.desktop.features;
 /*
  * Copyright (C) 2026 Samuel Owino
  *
@@ -17,6 +17,7 @@ package com.owino.desktop;
  */
 import java.nio.file.Path;
 import java.util.Optional;
+import com.owino.OSQANavigationEvents;
 import com.owino.core.Result;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
@@ -24,16 +25,17 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.text.Font;
 import com.owino.core.OSQAModel;
 import javafx.scene.layout.VBox;
-import com.owino.conf.OSQAConfig;
+import com.owino.core.OSQAConfig;
 import com.owino.settings.SettingDao;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import com.owino.core.OSQAModel.OSQAModule;
 import com.owino.core.OSQAModel.OSQATestSpec;
 import com.owino.core.OSQAModel.OSQATestCase;
-public class ModuleDetailedView extends VBox {
+import org.greenrobot.eventbus.EventBus;
+public class FeatureDetailedView extends VBox {
     public static final Insets MARGIN = new Insets(8,22,8,22);
-    public ModuleDetailedView(OSQAModule module){
+    public FeatureDetailedView(OSQAModule module){
         var moduleTitleLabel = new Label();
         var moduleDescriptionLabel = new Label();
         moduleTitleLabel.setText(module.name());
@@ -91,7 +93,7 @@ public class ModuleDetailedView extends VBox {
         }
         var addTestCaseButton = new Button("Add Test Case");
         addTestCaseButton.setOnAction(event -> {
-            var dialog = new AddVerificationDialog();
+            var dialog = new FeatureVerificationForm();
             Optional<String> inputResult = dialog.showAndWait();
             if (inputResult.isPresent()){
                 var verificationDesc = inputResult.get();
@@ -115,7 +117,7 @@ public class ModuleDetailedView extends VBox {
                             alert.setHeaderText("Verifications for this test have been updated successfully!");
                             var dialogResult = alert.showAndWait();
                             if (dialogResult.isPresent()){
-                                fireEvent(AppEvents.openModuleDetailedViewEvent(module));
+                                EventBus.getDefault().post(new OSQANavigationEvents.OpenFeatureDetailedViewEvent(module));
                             }
                         }
                         case Result.Failure<Void> failure -> {

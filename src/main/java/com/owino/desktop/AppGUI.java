@@ -15,18 +15,35 @@ package com.owino.desktop;
  * You should have received a copy of the GNU General Public License
  * along with OSQA.  If not, see <https://www.gnu.org/licenses/>.
  */
+import atlantafx.base.theme.PrimerDark;
+import com.owino.desktop.dashboard.DashboardView;
+import com.owino.desktop.dashboard.AppToolbar;
 import javafx.application.Application;
+import javafx.scene.control.Separator;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 public class AppGUI extends Application {
     @Override
     public void start(Stage stage) {
+        setTheme();
+        var mainAppWindow = new VBox();
+        var toolbar = new AppToolbar();
         var dashboard = new DashboardView(stage);
-        var scene = new Scene(dashboard);
+        mainAppWindow.getChildren().add(toolbar);
+        mainAppWindow.getChildren().add(new Separator());
+        mainAppWindow.getChildren().add(dashboard);
+        VBox.setVgrow(dashboard, Priority.ALWAYS);
+        var scene = new Scene(mainAppWindow);
         stage.setScene(scene);
         stage.setMinHeight(800);
         stage.setMinWidth(1000);
         stage.setTitle("OSQA");
+        stage.setFullScreen(false);
         stage.show();
+    }
+    private void setTheme() {
+        Application.setUserAgentStylesheet(new PrimerDark().getUserAgentStylesheet());
     }
 }

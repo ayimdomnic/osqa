@@ -1,4 +1,4 @@
-package com.owino.desktop;
+package com.owino.desktop.features;
 /*
  * Copyright (C) 2026 Samuel Owino
  *
@@ -15,36 +15,41 @@ package com.owino.desktop;
  * You should have received a copy of the GNU General Public License
  * along with OSQA.  If not, see <https://www.gnu.org/licenses/>.
  */
-import com.owino.conf.OSQAConfig;
-import com.owino.core.OSQAModel;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.UUID;
+import java.util.Optional;
+import java.util.ArrayList;
 import com.owino.core.Result;
-import com.owino.settings.SettingDao;
+import com.owino.desktop.CSS;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BorderPane;
-import tools.jackson.databind.ObjectMapper;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-public class VerificationFormView extends ScrollPane {
-    private final List<OSQAModel.OSQATestCase> testCases = new ArrayList<>();
+import com.owino.core.OSQAConfig;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import com.owino.settings.SettingDao;
+import javafx.scene.layout.BorderPane;
+import com.owino.OSQANavigationEvents;
+import org.greenrobot.eventbus.EventBus;
+import com.owino.core.OSQAModel.OSQAModule;
+import tools.jackson.databind.ObjectMapper;
+import com.owino.core.OSQAModel.OSQATestSpec;
+import com.owino.core.OSQAModel.OSQATestCase;
+import com.owino.core.OSQAModel.OSQAVerification;
+public class FeatureFormView extends ScrollPane {
+    private final List<OSQATestCase> testCases = new ArrayList<>();
     private static final Insets MARGIN = new Insets(6,22,12,22);
-    private static final Insets FIELD_MARGIN = new Insets(6,12,12,12);
-    private TextArea verificationField;
+    private static final Insets FIELD_MARGIN = new Insets(4,12,2,12);
+    private static final Insets LABEL_MARGIN = new Insets(12);
+    private static final Font FORM_LABEL_FONT = Font.font(17);
+    private final VBox verificationListContainer = new VBox();
     private TextArea userActionField;
     private TextField moduleTitleTextField;
-    public VerificationFormView(){
+    private List<OSQAVerification> verifications = new ArrayList<>();
+    public FeatureFormView(){
         var moduleForm = initModuleForm();
         setContent(moduleForm);
         setFitToWidth(true);
@@ -52,40 +57,37 @@ public class VerificationFormView extends ScrollPane {
     private VBox initModuleForm() {
         var formContainer = new VBox();
         var header = new BorderPane();
-        var titleText = new Text("Create New OSQA Verification");
+        var titleText = new Text("New Feature");
         titleText.setFont(Font.font(21));
-        var moduleActionContainer = new HBox(22);
+        var actionButtonsContainer = new HBox(22);
         var cancelButton = new Button("Cancel");
-        moduleActionContainer.getChildren().add(cancelButton);
+        actionButtonsContainer.getChildren().add(cancelButton);
         header.setLeft(titleText);
-        header.setRight(moduleActionContainer);
-        var saveButton = new Button("Save OSQA Test");
-        cancelButton.setOnAction(_ -> fireEvent(AppEvents.closeModuleFormEvent()));
-
+        header.setRight(actionButtonsContainer);
+        var saveButton = new Button("Save");
+        cancelButton.setOnAction(_ -> EventBus.getDefault().post(new OSQANavigationEvents.HomeEvent()));
         var moduleDetailsContainer = new VBox();
-        var moduleTitleText = new Text("Test Name:");
+        var moduleTitleText = new Text("Name");
         moduleTitleTextField = new TextField();
-        var descriptionText = new Text("Test Description:");
+        var descriptionText = new Text("Description");
         var descriptionTextField = new TextField();
-        moduleTitleText.setFont(Font.font(15));
-        descriptionText.setFont(Font.font(15));
-
+        moduleTitleText.setFont(FORM_LABEL_FONT);
+        descriptionText.setFont(FORM_LABEL_FONT);
         moduleDetailsContainer.getChildren().add(moduleTitleText);
         moduleDetailsContainer.getChildren().add(moduleTitleTextField);
         moduleDetailsContainer.getChildren().add(descriptionText);
         moduleDetailsContainer.getChildren().add(descriptionTextField);
-        moduleDetailsContainer.setBackground(Background.fill(Color.GRAY));
-
-        VBox.setMargin(moduleTitleText,FIELD_MARGIN);
+        moduleDetailsContainer.getChildren().add(new Separator());
+        moduleDetailsContainer.setStyle(CSS.FORM_SECTION_BORDER);
+        VBox.setMargin(moduleTitleText,LABEL_MARGIN);
         VBox.setMargin(moduleTitleTextField,FIELD_MARGIN);
-        VBox.setMargin(descriptionText,FIELD_MARGIN);
+        VBox.setMargin(descriptionText,LABEL_MARGIN);
         VBox.setMargin(descriptionTextField,FIELD_MARGIN);
-
         formContainer.getChildren().add(header);
         formContainer.getChildren().add(moduleDetailsContainer);
         VBox.setMargin(header,MARGIN);
         VBox.setMargin(moduleDetailsContainer,MARGIN);
-        moduleActionContainer.getChildren().add(saveButton);
+        actionButtonsContainer.getChildren().add(saveButton);
         VBox.setMargin(saveButton,MARGIN);
         addTestCaseForm(formContainer);
         saveButton.setOnAction(_ -> {
@@ -101,14 +103,13 @@ public class VerificationFormView extends ScrollPane {
                 var appDir = optionalAppDir.get();
                 var specFile = testCaseTitle + OSQAConfig.timestampedName(LocalDateTime.now(),"json");
                 var filePath = appDir.toAbsolutePath().toString().concat("/").concat(specFile);
-                var testCase = new OSQAModel.OSQATestCase(UUID.randomUUID().toString(),testCaseTitle,filePath);
-                var verification = new OSQAModel.OSQAVerification(0,verificationField.getText());
-                var specification = new OSQAModel.OSQATestSpec(UUID.randomUUID().toString(),userActionField.getText(),List.of(verification));
+                var testCase = new OSQATestCase(UUID.randomUUID().toString(),testCaseTitle,filePath);
+                var specification = new OSQATestSpec(UUID.randomUUID().toString(),userActionField.getText(),verifications);
                 OSQAConfig.writeSpecFile(appDir,specification,specFile);
                 testCases.add(testCase);
                 var moduleTitle = moduleTitleTextField.getText();
                 var moduleDescription = descriptionTextField.getText();
-                var module = new OSQAModel.OSQAModule(
+                var module = new OSQAModule(
                         UUID.randomUUID().toString(),
                         moduleTitle,
                         moduleDescription,
@@ -116,14 +117,14 @@ public class VerificationFormView extends ScrollPane {
                         testCases);
                 OSQAConfig.writeModule(appDir,module);
                 IO.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(module));
-                Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+                Alert successAlert = new Alert(Alert.AlertType.NONE);
                 successAlert.setTitle("Success!");
-                successAlert.setContentText("Module created successfully!");
-                successAlert.showAndWait();
-                successAlert.setOnCloseRequest(event -> {
-                    fireEvent(AppEvents.closeModuleFormEvent());
+                successAlert.setContentText("Feature created successfully!");
+                successAlert.getButtonTypes().add(ButtonType.OK);
+                if (successAlert.showAndWait().isPresent()){
                     successAlert.close();
-                });
+                    EventBus.getDefault().post(new OSQANavigationEvents.HomeEvent());
+                }
             }
         });
         return formContainer;
@@ -131,29 +132,49 @@ public class VerificationFormView extends ScrollPane {
     private void addTestCaseForm(VBox container) {
         var testCaseFormContainer = new VBox();
         var separator = new Separator();
-        var userActionTitle = new Text("Describe User Action:");
+        var userActionTitle = new Text("Usage instructions");
         userActionField = new TextArea();
-        userActionTitle.setFont(Font.font(15));
+        userActionTitle.setFont(FORM_LABEL_FONT);
         userActionField.setFont(Font.font(15));
-
         testCaseFormContainer.getChildren().add(userActionTitle);
         testCaseFormContainer.getChildren().add(userActionField);
         testCaseFormContainer.getChildren().add(separator);
-
-        VBox.setMargin(userActionTitle,FIELD_MARGIN);
+        VBox.setMargin(userActionTitle,LABEL_MARGIN);
         VBox.setMargin(userActionField,FIELD_MARGIN);
         container.getChildren().add(testCaseFormContainer);
         VBox.setMargin(testCaseFormContainer,MARGIN);
-        testCaseFormContainer.setBackground(Background.fill(Color.GRAY));
-
+        var verificationsContainer = new BorderPane();
         var verificationLabel = new Text("Verifications:");
-        verificationLabel.setFont(Font.font(15));
-        verificationField = new TextArea();
+        var addVerificationButton = new Button("Add Verification");
+        verificationsContainer.setLeft(verificationLabel);
+        verificationsContainer.setRight(addVerificationButton);
+        verificationsContainer.setBottom(verificationListContainer);
+        BorderPane.setMargin(verificationLabel,FIELD_MARGIN);
+        verificationLabel.setFont(FORM_LABEL_FONT);
         var verificationSeparator = new Separator();
-        testCaseFormContainer.getChildren().add(verificationLabel);
-        testCaseFormContainer.getChildren().add(verificationField);
+        testCaseFormContainer.getChildren().add(verificationsContainer);
         testCaseFormContainer.getChildren().add(verificationSeparator);
-        VBox.setMargin(verificationLabel,FIELD_MARGIN);
-        VBox.setMargin(verificationField,FIELD_MARGIN);
+        testCaseFormContainer.setStyle(CSS.FORM_SECTION_BORDER);
+        addVerificationButton.setOnAction(_ -> {
+            Optional<String> inputResult = new FeatureVerificationForm().showAndWait();
+            if (inputResult.isPresent()){
+                if (!inputResult.get().isBlank()){
+                    verifications.add( new OSQAVerification(0,inputResult.get()));
+                    Alert successAlert = new Alert(Alert.AlertType.NONE);
+                    successAlert.setTitle("Success");
+                    successAlert.setContentText("""
+                            Verification step
+                            (%s)
+                            has been added successfully.
+                            This feature now has (%d) verification steps.
+                            """.formatted(inputResult.get(),verifications.size()));
+                    successAlert.getButtonTypes().add(ButtonType.OK);
+                    successAlert.show();
+                    var verificationCheckbox = new CheckBox(inputResult.get());
+                    verificationListContainer.getChildren().add(verificationCheckbox);
+                    VBox.setMargin(verificationCheckbox, new Insets(8));
+                }
+            }
+        });
     }
 }

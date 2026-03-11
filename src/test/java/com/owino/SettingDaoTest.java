@@ -15,7 +15,7 @@ package com.owino;
  * You should have received a copy of the GNU General Public License
  * along with OSQA.  If not, see <https://www.gnu.org/licenses/>.
  */
-import com.owino.conf.OSQAConfig;
+import com.owino.core.OSQAConfig;
 import com.owino.core.Result;
 import com.owino.settings.SettingDao;
 import org.junit.jupiter.api.AfterEach;

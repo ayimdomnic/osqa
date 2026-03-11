@@ -1,4 +1,4 @@
-package com.owino.conf;
+package com.owino.core;
 /*
  * Copyright (C) 2026 Samuel Owino
  *
@@ -22,8 +22,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.io.IOException;
 import java.nio.file.Files;
-import com.owino.core.OSQAModel;
-import com.owino.core.Result;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import com.owino.core.OSQAModel.OSQAModule;

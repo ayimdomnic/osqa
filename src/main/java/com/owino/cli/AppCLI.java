@@ -15,9 +15,8 @@ package com.owino.cli;
  * You should have received a copy of the GNU General Public License
  * along with OSQA.  If not, see <https://www.gnu.org/licenses/>.
  */
-import com.owino.conf.OSQAConfig;
+import com.owino.core.OSQAConfig;
 import com.owino.core.OSQAModel.OSQATestCase;
-import com.owino.conf.OSQASession;
 import com.owino.core.Result;
 import java.io.IOException;
 import java.nio.file.Files;
