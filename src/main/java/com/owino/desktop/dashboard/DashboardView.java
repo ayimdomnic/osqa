@@ -15,17 +15,21 @@ package com.owino.desktop.dashboard;
  * You should have received a copy of the GNU General Public License
  * along with OSQA.  If not, see <https://www.gnu.org/licenses/>.
  */
-import com.owino.desktop.features.FeatureListingsView;
+import com.owino.desktop.products.ProductsListView;
 import javafx.stage.Stage;
 import javafx.application.Platform;
 import javafx.geometry.Orientation;
 import javafx.scene.control.SplitPane;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
+import com.owino.desktop.products.ProductFormView;
 import com.owino.desktop.features.FeatureFormView;
 import com.owino.desktop.features.FeatureDetailedView;
+import com.owino.desktop.features.FeatureListingsView;
 import com.owino.desktop.OSQANavigationEvents.OpenDashboardEvent;
+import com.owino.desktop.OSQANavigationEvents.OpenProductFormEvent;
 import com.owino.desktop.OSQANavigationEvents.OpenFeatureFormEvent;
+import com.owino.desktop.OSQANavigationEvents.OpenProductsListEvent;
 import com.owino.desktop.OSQANavigationEvents.OpenFeaturesListViewEvent;
 import com.owino.desktop.OSQANavigationEvents.OpenFeatureDetailedViewEvent;
 public class DashboardView extends SplitPane {
@@ -37,7 +41,7 @@ public class DashboardView extends SplitPane {
     }
     private void initView() {
         getItems().add(new MainMenuView());
-        getItems().add(new WelcomeView(stage));
+        getItems().add(new WelcomeView());
         setOrientation(Orientation.HORIZONTAL);
         setDividerPositions(0.05f);
         setStyle("-fx-divider-color: #cccccc; -fx-divider-width: 1;");
@@ -46,7 +50,7 @@ public class DashboardView extends SplitPane {
     public void handleHomeNavEvent(OpenDashboardEvent event){
         Platform.runLater(() -> {
             getItems().removeLast();
-            getItems().add(new WelcomeView(stage));
+            getItems().add(new WelcomeView());
             setDividerPositions(0.05f);
         });
     }
@@ -67,7 +71,19 @@ public class DashboardView extends SplitPane {
     @Subscribe
     public void openFeaturesListViewEvent(OpenFeaturesListViewEvent event){
         getItems().removeLast();
-        getItems().add(new FeatureListingsView());
+        getItems().add(new FeatureListingsView(event.selectedProduct()));
+        setDividerPositions(0.05f);
+    }
+    @Subscribe
+    public void openProductFormEvent(OpenProductFormEvent event){
+        getItems().removeLast();
+        getItems().add(new ProductFormView(stage));
+        setDividerPositions(0.05f);
+    }
+    @Subscribe
+    public void openProductsListEvent(OpenProductsListEvent event){
+        getItems().removeLast();
+        getItems().add(new ProductsListView());
         setDividerPositions(0.05f);
     }
 }

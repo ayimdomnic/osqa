@@ -21,4 +21,5 @@ buildNumber.properties
 *.tmp
 data/
 settings_db
+products_db
 README.md.bak

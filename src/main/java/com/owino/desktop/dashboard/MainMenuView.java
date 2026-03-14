@@ -15,12 +15,14 @@ package com.owino.desktop.dashboard;
  * You should have received a copy of the GNU General Public License
  * along with OSQA.  If not, see <https://www.gnu.org/licenses/>.
  */
+import com.owino.desktop.products.ProductSelectionDialog;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import org.greenrobot.eventbus.EventBus;
 import com.owino.desktop.OSQANavigationEvents.OpenDashboardEvent;
+import com.owino.desktop.OSQANavigationEvents.OpenProductsListEvent;
 import com.owino.desktop.OSQANavigationEvents.OpenFeaturesListViewEvent;
 import com.owino.desktop.OSQANavigationEvents.ToggleShowVerificationButtonEvent;
 public class MainMenuView extends VBox {
@@ -55,13 +57,16 @@ public class MainMenuView extends VBox {
             unhighlightEffect(featuresLabel);
             unhighlightEffect(reportsLabel);
             EventBus.getDefault().post(new ToggleShowVerificationButtonEvent(false));
+            EventBus.getDefault().post(new OpenProductsListEvent());
         });
         featuresLabel.setOnMouseClicked(_ -> {
             highlightEffect(featuresLabel);
             unhighlightEffect(productsLabel);
             unhighlightEffect(reportsLabel);
-            EventBus.getDefault().post(new OpenFeaturesListViewEvent());
             EventBus.getDefault().post(new ToggleShowVerificationButtonEvent(false));
+            var productSelectDialog = new ProductSelectionDialog();
+            var result = productSelectDialog.showAndWait();
+            result.ifPresent(selectedProduct -> EventBus.getDefault().post(new OpenFeaturesListViewEvent(selectedProduct)));
         });
         reportsLabel.setOnMouseClicked(_ -> {
             highlightEffect(reportsLabel);

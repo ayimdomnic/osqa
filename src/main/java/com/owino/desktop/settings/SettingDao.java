@@ -1,4 +1,4 @@
-package com.owino.settings;
+package com.owino.desktop.settings;
 /*
  * Copyright (C) 2026 Samuel Owino
  *

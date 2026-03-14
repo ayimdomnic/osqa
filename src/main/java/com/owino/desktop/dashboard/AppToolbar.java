@@ -27,6 +27,7 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import com.owino.desktop.OSQANavigationEvents.OpenDashboardEvent;
 import com.owino.desktop.OSQANavigationEvents.OpenFeatureFormEvent;
+import com.owino.desktop.OSQANavigationEvents.OpenProductFormEvent;
 import com.owino.desktop.OSQANavigationEvents.ShowVerificationFormEvent;
 import com.owino.desktop.OSQANavigationEvents.ResetVerificationsEvent;
 import com.owino.desktop.OSQANavigationEvents.ToggleShowVerificationButtonEvent;
@@ -66,6 +67,7 @@ public class AppToolbar extends BorderPane {
             EventBus.getDefault().post(new ToggleShowVerificationButtonEvent(false));
 
         });
+        addProductButton.setOnMouseClicked(_ -> EventBus.getDefault().post(new OpenProductFormEvent()));
         addVerificationButton.setOnAction(_ -> EventBus.getDefault().post(new ShowVerificationFormEvent()));
         resetVerificationButton.setOnAction(_ -> EventBus.getDefault().post(new ResetVerificationsEvent()));
         EventBus.getDefault().register(this);

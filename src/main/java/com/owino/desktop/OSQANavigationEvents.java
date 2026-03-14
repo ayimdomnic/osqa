@@ -15,20 +15,21 @@ package com.owino.desktop;
  * You should have received a copy of the GNU General Public License
  * along with OSQA.  If not, see <https://www.gnu.org/licenses/>.
  */
-import com.owino.core.OSQAModel.OSQAFeature;
-import java.nio.file.Path;
 import java.util.UUID;
+import com.owino.core.OSQAModel.OSQAProduct;
+import com.owino.core.OSQAModel.OSQAFeature;
 public sealed interface OSQANavigationEvents {
     record OpenDashboardEvent() implements OSQANavigationEvents {}
-    record AppDirEvent(Path appDir) implements OSQANavigationEvents {}
     record OpenFeatureFormEvent(String featureUuid,boolean isEditMode) implements OSQANavigationEvents {
         public OpenFeatureFormEvent(){
             this(UUID.randomUUID().toString(),false);
         }
     }
     record OpenFeatureDetailedViewEvent(OSQAFeature selectedFeature) implements OSQANavigationEvents {}
-    record OpenFeaturesListViewEvent() implements OSQANavigationEvents {}
+    record OpenFeaturesListViewEvent(OSQAProduct selectedProduct) implements OSQANavigationEvents {}
     record ToggleShowVerificationButtonEvent(boolean show) implements OSQANavigationEvents {}
     record ShowVerificationFormEvent() implements OSQANavigationEvents {}
     record ResetVerificationsEvent() implements  OSQANavigationEvents {}
+    record OpenProductFormEvent() implements  OSQANavigationEvents {}
+    record OpenProductsListEvent() implements  OSQANavigationEvents {}
 }

@@ -21,6 +21,7 @@ public class TestData {
     public static final List<OSQAModel.OSQAFeature> featureOptions = List.of(
             new OSQAModel.OSQAFeature(
                     "51fbd57d-a299-4891-8450-071b48b6a24d",
+                    "7a5b7ad9-c994-4a72-a17a-612c2d9a6029",
                     "Core Calendar and Navigation",
                     "Validates basic calendar rendering, navigation controls, and fundamental UI elements.",
                     "Critical",
@@ -41,6 +42,7 @@ public class TestData {
             ),
             new OSQAModel.OSQAFeature(
                     "62acd12e-b111-4a99-9000-123456789abc",
+                    "7a5b7ad9-c994-4a72-a17a-612c2d9a6029",
                     "User Authentication",
                     "Validates login, logout, and session security workflows.",
                     "High",
@@ -61,6 +63,7 @@ public class TestData {
             ),
             new OSQAModel.OSQAFeature(
                     "73bed23f-c222-4b77-8000-abcdefabcdef",
+                    "7a5b7ad9-c994-4a72-a17a-612c2d9a6029",
                     "Reporting Engine",
                     "Validates data aggregation, chart rendering, and export functionality.",
                     "Medium",
@@ -84,6 +87,7 @@ public class TestData {
     public static final OSQAModel.OSQAFeature firstIndexFeature =
             new OSQAModel.OSQAFeature(
             "62acd12e-b111-4a99-9000-123456789abc",
+                    "7a5b7ad9-c994-4a72-a17a-612c2d9a6029",
             "User Authentication",
             "Validates login, logout, and session security workflows.",
             "High",

@@ -17,7 +17,7 @@ package com.owino;
  */
 import com.owino.core.OSQAConfig;
 import com.owino.core.Result;
-import com.owino.settings.SettingDao;
+import com.owino.desktop.settings.SettingDao;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import java.io.File;

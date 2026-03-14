@@ -60,7 +60,8 @@ public class OSQAGenerator {
                 default -> throw new RuntimeException("Unknown priority type");
             };
             var testCases = collectTestCases(featureTitle);
-            var feature = new OSQAFeature(UUID.randomUUID().toString(),featureTitle,description,priorityName,testCases);
+            var productUuid = "7a5b7ad9-c994-4a72-a17a-612c2d9a6029";
+            var feature = new OSQAFeature(UUID.randomUUID().toString(),productUuid,featureTitle,description,priorityName,testCases);
             features.add(feature);
             IO.println("Add another feature?: y/n");
             done = !scanner.nextLine().equalsIgnoreCase("y");

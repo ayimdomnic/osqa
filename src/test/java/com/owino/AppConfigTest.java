@@ -15,20 +15,21 @@ package com.owino;
  * You should have received a copy of the GNU General Public License
  * along with OSQA.  If not, see <https://www.gnu.org/licenses/>.
  */
-import com.owino.core.OSQAConfig;
 import com.owino.core.Result;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.time.LocalDateTime;
+import com.owino.core.OSQAConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import com.owino.core.OSQAModel.OSQAProduct;
 import com.owino.core.OSQAModel.OSQAFeature;
 import com.owino.core.OSQAModel.OSQATestCase;
 import com.owino.core.OSQAModel.OSQATestSpec;
@@ -161,7 +162,7 @@ public class AppConfigTest {
     public void shouldWriteFeaturesConfFileTest() throws IOException {
         var uuid = "5833312b-7c84-4e6d-a067-622eb2156761";
         var testSpec = new OSQATestCase(uuid,"testcase","specfile.json");
-        var feature = new OSQAFeature(uuid,"Launch application","Feature notes","Critical",List.of(testSpec));
+        var feature = new OSQAFeature(uuid,"5833312b-7c84-4e6d-a067-622eb2156761","Launch application","Feature notes","Critical",List.of(testSpec));
         var result = OSQAConfig.writeFeature(Paths.get(OSQAConfig.MODULE_DIR),feature);
         IO.println(result);
         assertThat(result instanceof Result.Success<Path>).isTrue();
@@ -175,7 +176,7 @@ public class AppConfigTest {
         var uuid = "5833312b-7c84-4e6d-a067-622eb2156761";
         var featureTitle = "Launch application";
         var testSpec = new OSQATestCase(uuid,"testcase","specfile.json");
-        var feature = new OSQAFeature(uuid,featureTitle,"Feature notes","Critical",List.of(testSpec));
+        var feature = new OSQAFeature(uuid,"5833312b-7c84-4e6d-a067-622eb2156761",featureTitle,"Feature notes","Critical",List.of(testSpec));
         var result = OSQAConfig.writeFeature(Paths.get(OSQAConfig.MODULE_DIR),feature);
         IO.println(result);
         assertThat(result instanceof Result.Success<Path>).isTrue();
@@ -298,13 +299,11 @@ public class AppConfigTest {
         var secondVerification = specOverwrite.verifications().stream()
                 .filter(e -> e.uuid().equals(verificationStep2.uuid()))
                 .toList().getFirst();
-
         assertThat(firstVerification).isNotNull();
         assertThat(firstVerification.uuid()).isEqualTo(verification.uuid());
         assertThat(firstVerification.description()).isEqualTo(verification.description());
         assertThat(firstVerification.verificationStatus()).isNotEqualTo(verification.verificationStatus());
         assertThat(firstVerification.verificationStatus()).isEqualTo(true);
-
         assertThat(secondVerification).isNotNull();
         assertThat(secondVerification.uuid()).isEqualTo(verificationStep2.uuid());
         assertThat(secondVerification.description()).isEqualTo(verificationStep2.description());
@@ -332,6 +331,7 @@ public class AppConfigTest {
     private final String featuresJson = """
             {
                 "uuid": "a76b4d46-e7df-43ea-afec-221b899ae527",
+                "productUuid": "a76b4d46-e7df-43ea-afec-221b899ae527",
                 "name": "Core Calendar and Navigation",
                 "description": "Validates basic calendar rendering, navigation controls, and fundamental UI elements.",
                 "priority": "Critical",
@@ -347,6 +347,7 @@ public class AppConfigTest {
     private final String invalidFeaturesJson = """
             {
                 "uuid": "uuid",
+                "productUuid": "",
                 "name": "",
                 "description": "",
                 "priority": "",
