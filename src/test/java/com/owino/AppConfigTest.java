@@ -330,8 +330,11 @@ public class AppConfigTest {
                 List.of(testCase));
         var actualCompletionCount = OSQAConfig.calculateFeatureVerificationProgress(feature);
         var expectedCompletion = 25;
-        assertThat(actualCompletionCount).isGreaterThan(0);
-        assertThat(actualCompletionCount).isEqualTo(expectedCompletion);
+        assertThat(actualCompletionCount).isInstanceOf(Result.Success.class);
+        if (actualCompletionCount instanceof Result.Success<Long>(Long progress)){
+            assertThat(progress).isGreaterThan(0);
+            assertThat(progress).isEqualTo(expectedCompletion);
+        }
         Files.deleteIfExists(Paths.get(specFile));
     }
     @AfterEach
