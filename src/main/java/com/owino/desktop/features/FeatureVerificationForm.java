@@ -1,4 +1,4 @@
-package com.owino.desktop;
+package com.owino.desktop.features;
 /*
  * Copyright (C) 2026 Samuel Owino
  *
@@ -15,26 +15,35 @@ package com.owino.desktop;
  * You should have received a copy of the GNU General Public License
  * along with OSQA.  If not, see <https://www.gnu.org/licenses/>.
  */
-import javafx.application.Platform;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.TextArea;
+import javafx.geometry.Insets;
+import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
-public class AddVerificationDialog extends Dialog<String> {
-    public AddVerificationDialog(){
+import javafx.scene.text.Font;
+public class FeatureVerificationForm extends Dialog<String> {
+    public FeatureVerificationForm(){
         var container = new VBox();
-        setTitle("Add New Verification");
+        setTitle("Feature Verification");
+        var title = new Label("New Feature Verification.");
+        var description = new Label("Add single-step criteria to validate this feature during QA");
+        title.setFont(Font.font(21));
+        description.setFont(Font.font(15));
         var verificationDescTextArea = new TextArea();
-        verificationDescTextArea.setPromptText("Enter multiple lines of text...");
+        verificationDescTextArea.setPromptText("""
+        Add a verification prompt...for example:
+        When a user submits valid data, is the expected output generated immediately?
+        """);
         verificationDescTextArea.setWrapText(true);
         verificationDescTextArea.setPrefRowCount(5);
         verificationDescTextArea.setPrefColumnCount(40);
         var okButtonType = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
         getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
+        container.getChildren().add(title);
+        container.getChildren().add(description);
         container.getChildren().add(verificationDescTextArea);
+        VBox.setMargin(title, new Insets(12,12,6,12));
+        VBox.setMargin(description, new Insets(6,12,6,12));
+        VBox.setMargin(verificationDescTextArea, new Insets(12));
         getDialogPane().setContent(container);
-        Platform.runLater(verificationDescTextArea::requestFocus);
         setResultConverter(dialogButton -> {
             if (dialogButton == okButtonType) {
                 return verificationDescTextArea.getText();

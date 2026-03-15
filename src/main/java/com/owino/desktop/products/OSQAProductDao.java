@@ -1,0 +1,89 @@
+package com.owino.desktop.products;
+/*
+ * Copyright (C) 2026 Samuel Owino
+ *
+ * OSQA is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * OSQA is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with OSQA.  If not, see <https://www.gnu.org/licenses/>.
+ */
+import java.util.List;
+import java.util.ArrayList;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import com.owino.core.Result;
+import java.sql.SQLException;
+import java.sql.DriverManager;
+import com.owino.core.OSQAModel.OSQAProduct;
+public class OSQAProductDao {
+    public static final String PRODUCTS_DB_NAME = "products_db";
+    public static Result<Connection> connection(){
+        try {
+            var connection = DriverManager.getConnection("jdbc:sqlite:" + PRODUCTS_DB_NAME);
+            return Result.success(connection);
+        } catch (SQLException exception){
+            return Result.failure("Failed to open con to sqlite products db: " + exception.getLocalizedMessage());
+        }
+    }
+    public static Result<Void> saveProduct(OSQAProduct product){
+        try {
+            var schemaSql = """
+                CREATE TABLE IF NOT EXISTS Products (
+                    uuid TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    target TEXT NOT NULL,
+                    projectDir TEXT NOT NULL
+                );
+                """;
+            var insertSql = """
+                INSERT INTO Products VALUES(?,?,?,?);
+                """;
+            var resultConn = connection();
+            if (!(resultConn instanceof Result.Success<Connection> (Connection connection))){
+                return Result.failure("Failed to open database connection");
+            }
+            var schemaStatement = connection.createStatement();
+            schemaStatement.execute(schemaSql);
+            var insertStatement = connection.prepareStatement(insertSql);
+            insertStatement.setString(1,product.uuid());
+            insertStatement.setString(2,product.name());
+            insertStatement.setString(3,product.target());
+            insertStatement.setString(4,product.projectDir().toAbsolutePath().toString());
+            insertStatement.execute();
+            return Result.success(null);
+        } catch (SQLException error){
+            return Result.failure("Failed to save product: " + error.getLocalizedMessage());
+        }
+    }
+    public static Result<List<OSQAProduct>> listProducts(){
+        try {
+            var listSql = """
+                SELECT * FROM Products;
+                """;
+            if (!(connection() instanceof Result.Success<Connection> (Connection connection)))
+                return Result.failure("Failed to open database connection");
+            var statement = connection.createStatement();
+            var resultSet = statement.executeQuery(listSql);
+            List<OSQAProduct> products = new ArrayList<>();
+            while (resultSet.next()){
+                var uuid = resultSet.getString(1);
+                var name = resultSet.getString(2);
+                var target = resultSet.getString(3);
+                var projectDir = Paths.get(resultSet.getString(4));
+                var product = new OSQAProduct(uuid,name,target,projectDir);
+                products.add(product);
+            }
+            return Result.success(products);
+        } catch (SQLException failure){
+            return Result.failure("Failed to load products list: " + failure.getLocalizedMessage());
+        }
+    }
+}

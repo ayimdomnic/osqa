@@ -15,7 +15,7 @@ package com.owino;
  * You should have received a copy of the GNU General Public License
  * along with OSQA.  If not, see <https://www.gnu.org/licenses/>.
  */
-import com.owino.conf.OSQASession;
+import com.owino.cli.OSQASession;
 import com.owino.core.Result;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,8 +23,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import java.util.List;
 import java.util.Scanner;
+import java.util.UUID;
+
 import org.mockito.junit.jupiter.MockitoExtension;
-import com.owino.core.OSQAModel.OSQAModule;
+import com.owino.core.OSQAModel.OSQAFeature;
 import com.owino.core.OSQAModel.OSQAOutcome;
 import com.owino.core.OSQAModel.OSQATestSpec;
 import com.owino.core.OSQAModel.OSQAVerification;
@@ -38,17 +40,17 @@ public class OSQASessionTest {
     @Mock
     private Scanner scanner;
     @Test
-    public void shouldAllowModuleSelectionTest(){
+    public void shouldAllowFeatureSelectionTest(){
         when(scanner.nextInt()).thenReturn(1);
-        Result<OSQAModule> selectionResult = session.moduleSelection(TestData.moduleOptions);
-        assertThat(selectionResult instanceof Result.Success<OSQAModule>).isTrue();
-        var selectedModule = ((Result.Success<OSQAModule>) selectionResult).value();
-        assertThat(selectedModule).isNotNull();
-        assertThat(selectedModule.uuid()).isEqualTo(TestData.firstIndexModule.uuid());
-        assertThat(selectedModule.name()).isEqualTo(TestData.firstIndexModule.name());
-        assertThat(selectedModule.description()).isEqualTo(TestData.firstIndexModule.description());
-        assertThat(selectedModule.priority()).isEqualTo(TestData.firstIndexModule.priority());
-        assertThat(selectedModule.testCases().size()).isEqualTo(TestData.firstIndexModule.testCases().size());
+        Result<OSQAFeature> selectionResult = session.featureSelection(TestData.featureOptions);
+        assertThat(selectionResult instanceof Result.Success<OSQAFeature>).isTrue();
+        var selectedFeature = ((Result.Success<OSQAFeature>) selectionResult).value();
+        assertThat(selectedFeature).isNotNull();
+        assertThat(selectedFeature.uuid()).isEqualTo(TestData.firstIndexFeature.uuid());
+        assertThat(selectedFeature.name()).isEqualTo(TestData.firstIndexFeature.name());
+        assertThat(selectedFeature.description()).isEqualTo(TestData.firstIndexFeature.description());
+        assertThat(selectedFeature.priority()).isEqualTo(TestData.firstIndexFeature.priority());
+        assertThat(selectedFeature.testCases().size()).isEqualTo(TestData.firstIndexFeature.testCases().size());
     }
     @Test
     public void shouldRenderSpecForIndividualCaseTest(){
@@ -57,8 +59,8 @@ public class OSQASessionTest {
                 "b722ba02-26a4-46d6-845b-5a7643df4eeb",
                 "On Device E, mark the 'Team Sync' task as complete.",
                 List.of(
-                        new OSQAVerification(1,"On Device B, the task is marked complete and a new instance appears with the correct future date."),
-                        new OSQAVerification(2,"On Device A, after a sync/refresh, the original task is marked complete and the new instance appears with the correct future date.")
+                        new OSQAVerification(UUID.randomUUID().toString(), 1,"On Device B, the task is marked complete and a new instance appears with the correct future date."),
+                        new OSQAVerification(UUID.randomUUID().toString(),2,"On Device A, after a sync/refresh, the original task is marked complete and the new instance appears with the correct future date.")
                 ));
         List<OSQAOutcome> outcomes = session.verifyQATestSpec(testSpec);
         assertThat(outcomes).isNotEmpty();

@@ -1,4 +1,4 @@
-package com.owino.conf;
+package com.owino.core;
 /*
  * Copyright (C) 2026 Samuel Owino
  *
@@ -15,43 +15,46 @@ package com.owino.conf;
  * You should have received a copy of the GNU General Public License
  * along with OSQA.  If not, see <https://www.gnu.org/licenses/>.
  */
-import java.nio.file.StandardOpenOption;
-import java.util.Comparator;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.io.IOException;
 import java.nio.file.Files;
-import com.owino.core.OSQAModel;
-import com.owino.core.Result;
 import java.time.LocalDateTime;
+import java.nio.file.StandardOpenOption;
 import java.time.format.DateTimeFormatter;
-import com.owino.core.OSQAModel.OSQAModule;
+import java.util.Optional;
+
+import com.owino.core.OSQAModel.OSQAFeature;
 import tools.jackson.databind.ObjectMapper;
 import com.owino.core.OSQAModel.OSQATestCase;
+import com.owino.core.OSQAModel.OSQAProduct;
 import com.owino.core.OSQAModel.OSQATestSpec;
+import com.owino.core.OSQAModel.OSQAVerification;
 public class OSQAConfig {
-    public static final String MODULE_FILE = "data/modules.json";
+    public static final String MODULE_FILE = "data/features.json";
     public static final String MODULE_DIR = "data";
-    public static Result<Void> loadModulesListFile(){
+    public static Result<Void> loadFeaturesListFile(){
         try {
             Path envFile = Paths.get(MODULE_DIR + "/" + "env.properties");
             if (Files.notExists(envFile)){
                 var dir = Paths.get(MODULE_DIR);
                 if (Files.notExists(dir)) Files.createDirectory(dir);
                 envFile = Files.createFile(Paths.get("data" + "/" + "env.properties"));
-                Files.writeString(envFile,"modules-file = " + OSQAConfig.MODULE_FILE);
+                Files.writeString(envFile,"features-file = " + OSQAConfig.MODULE_FILE);
             }
             return Result.success(null);
         } catch (IOException error) {
-            return Result.failure("Failed to load modules list file: cause " + error.getLocalizedMessage());
+            return Result.failure("Failed to load features list file: cause " + error.getLocalizedMessage());
         }
     }
-    public static Result<OSQAModule> loadModule(String modulesFile) {
+    public static Result<OSQAFeature> loadFeature(String featuresFile) {
         try {
-            var json = Files.readString(Paths.get(modulesFile));
-            var modules = new ObjectMapper().readValue(json, OSQAModule.class);
-            return Result.success(modules);
+            var json = Files.readString(Paths.get(featuresFile));
+            var features = new ObjectMapper().readValue(json, OSQAFeature.class);
+            return Result.success(features);
         } catch (IOException error){
             return Result.failure(error.getLocalizedMessage());
         }
@@ -85,45 +88,45 @@ public class OSQAConfig {
             return Result.failure("Failed to write test spec file:" +ex.getLocalizedMessage());
         }
     }
-    public static Result<Path> writeModule(Path appDataDir,OSQAModule module){
+    public static Result<Path> writeFeature(Path appDataDir, OSQAFeature feature){
         try {
-            var prefix = "module";
+            var prefix = "feature";
             var nameBuilder = new StringBuilder(appDataDir.toUri().getPath());
             nameBuilder.append("/");
             nameBuilder.append(prefix);
-            nameBuilder.append(module.name().replaceAll(" ",""));
+            nameBuilder.append(feature.name().replaceAll(" ",""));
             nameBuilder.append(timestampedName(LocalDateTime.now(),"json"));
             var fileName = nameBuilder.toString();
             var path = Paths.get(fileName);
-            Files.writeString(path, new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(module));
+            Files.writeString(path, new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(feature));
             if (Files.exists(path)) return Result.success(path);
-            else return Result.failure("Failed to create modules conf file: Error unknown");
+            else return Result.failure("Failed to create features conf file: Error unknown");
         } catch (IOException ex){
-            return Result.failure("Failed to write modules spec file:" +ex.getLocalizedMessage());
+            return Result.failure("Failed to write features spec file:" +ex.getLocalizedMessage());
         }
     }
-    public static Result<List<OSQAModule>> listModules(Path modulesDir) {
-        var folderExists = Files.exists(modulesDir);
-        if (!folderExists) return Result.failure("Failed to list modules, app dir does not exist");
-        try(var dirWalk = Files.walk(modulesDir)){
-            List<OSQAModule> modules = dirWalk.sorted(Comparator.reverseOrder())
+    public static Result<List<OSQAFeature>> listFeatures(Path featuresDir) {
+        var folderExists = Files.exists(featuresDir);
+        if (!folderExists) return Result.failure("Failed to list features, app dir does not exist");
+        try(var dirWalk = Files.walk(featuresDir)){
+            List<OSQAFeature> features = dirWalk.sorted(Comparator.reverseOrder())
                     .map(file -> new OSQAModel.OSQAFilesDirTuple(file.getFileName().toString(),file))
-                    .filter(tuple -> tuple.fileName().startsWith("module") && tuple.fileName().endsWith(".json"))
+                    .filter(tuple -> tuple.fileName().startsWith("feature") && tuple.fileName().endsWith(".json"))
                     .map(tuple -> {
                         try {
                             var rawContents = Files.readString(tuple.absPath());
-                            if (rawContents.isBlank()) throw new RuntimeException("Failed to read modules, file is empty" + tuple.absPath());
+                            if (rawContents.isBlank()) throw new RuntimeException("Failed to read features, file is empty" + tuple.absPath());
                             IO.println(rawContents);
-                            return new ObjectMapper().readValue(rawContents, OSQAModule.class);
+                            return new ObjectMapper().readValue(rawContents, OSQAFeature.class);
                         } catch (IOException ex){
-                            throw new RuntimeException("Failed to read modules file contents: " + ex.getLocalizedMessage());
+                            throw new RuntimeException("Failed to read features file contents: " + ex.getLocalizedMessage());
                         }
                     })
                     .toList();
-            if (modules.isEmpty()) return Result.failure("Failed to list modules: empty result");
-            else return Result.success(modules);
+            if (features.isEmpty()) return Result.failure("Failed to list features: empty result");
+            else return Result.success(features);
         } catch (IOException err){
-            return Result.failure("Failed to read module list due to IO error: " + err.getLocalizedMessage());
+            return Result.failure("Failed to read feature list due to IO error: " + err.getLocalizedMessage());
         }
     }
     public static Result<Void> overwriteSpecFile(OSQATestSpec updatedTestSpec,OSQATestCase parentTestCase) {
@@ -136,5 +139,42 @@ public class OSQAConfig {
         } catch (IOException error){
             return Result.failure(error.getLocalizedMessage());
         }
+    }
+    public static Result<OSQATestSpec> updateVerificationStatus(OSQATestSpec testSpec,OSQATestCase parentTestCase, OSQAVerification updatedVerification) {
+        List<OSQAVerification> updatedVerifications = new ArrayList<>();
+        var affectedVerification = testSpec.verifications()
+                .stream()
+                .filter(e -> e.uuid().equals(updatedVerification.uuid()))
+                .findFirst();
+        if (affectedVerification.isEmpty()) return Result.failure("Failed to update verification status: verification was not registered.");
+        var unAffectedVerifications = testSpec.verifications()
+                .stream()
+                .filter(e -> !e.uuid().equals(updatedVerification.uuid()))
+                .toList();
+        updatedVerifications.add(updatedVerification);
+        if (!unAffectedVerifications.isEmpty()) {
+            updatedVerifications.addAll(unAffectedVerifications);
+        }
+        var updatedTestSpec = new OSQATestSpec(testSpec.uuid(),testSpec.action(),updatedVerifications);
+        return switch (overwriteSpecFile(updatedTestSpec,parentTestCase)){
+            case Result.Success<Void> _ -> loadTestCaseSpec(parentTestCase);
+            case Result.Failure<Void> failure -> Result.failure(failure.error().getLocalizedMessage());
+        };
+    }
+    public static Result<Long> calculateFeatureVerificationProgress(OSQAFeature feature) {
+        var testCase = feature.testCases().getFirst();
+        Optional<OSQATestSpec> optionalTestSpec = switch (OSQAConfig.loadTestCaseSpec(testCase)){
+            case Result.Success<OSQATestSpec> (OSQATestSpec spec) -> Optional.of(spec);
+            case Result.Failure<OSQATestSpec> failure -> {
+                IO.println(failure.error().getLocalizedMessage());
+                yield Optional.empty();
+            }
+        };
+        if (optionalTestSpec.isEmpty()) return Result.failure("Failed to calculate verification status, missing test spec");
+        var testSpec = optionalTestSpec.get();
+        var completedCount = (double) testSpec.verifications().stream().filter(OSQAVerification::verificationStatus).count();
+        var total = (double) testSpec.verifications().size();
+        var progress = (long) ((completedCount / total) * 100.0);
+        return Result.success(progress);
     }
 }

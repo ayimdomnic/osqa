@@ -15,24 +15,27 @@ package com.owino.core;
  * You should have received a copy of the GNU General Public License
  * along with OSQA.  If not, see <https://www.gnu.org/licenses/>.
  */
-import java.nio.file.Path;
+import java.nio.file.Files;
 import java.util.List;
+import java.nio.file.Path;
 import java.util.regex.Pattern;
 public sealed interface OSQAModel {
-    record OSQAModule(
+    record OSQAFeature(
             String uuid,
+            String productUuid,
             String name,
             String description,
             String priority,
             List<OSQATestCase> testCases
     ) implements OSQAModel {
-        public OSQAModule {
+        public OSQAFeature {
             var uuidPattern = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}");
             var error = new StringBuilder();
-            if (uuid.isBlank() || !uuidPattern.matcher(uuid).find()) error.append("Invalid module uuid\n");
-            if (name.isBlank()) error.append("Module name cannot be blank\n");
-            if (description.isBlank()) error.append("Module description cannot be blank\n");
-            if (priority.isBlank()) error.append("Module priority cannot be blank\n");
+            if (uuid.isBlank() || !uuidPattern.matcher(uuid).find()) error.append("Invalid feature uuid\n");
+            if (productUuid.isBlank() || !uuidPattern.matcher(uuid).find()) error.append("Invalid product uuid\n");
+            if (name.isBlank()) error.append("Feature name cannot be blank\n");
+            if (description.isBlank()) error.append("Feature description cannot be blank\n");
+            if (priority.isBlank()) error.append("Feature priority cannot be blank\n");
             if (testCases.isEmpty()) error.append("Test cases cannot be empty");
             if (!error.isEmpty()) throw new OSQAValidationException(error.toString());
         }
@@ -66,14 +69,21 @@ public sealed interface OSQAModel {
         }
     }
     record OSQAVerification(
+            String uuid,
             Integer order,
-            String description
+            String description,
+            boolean verificationStatus
     ) implements OSQAModel {
         public OSQAVerification {
+            var uuidPattern = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}");
             var error = new StringBuilder();
+            if (uuid.isBlank() || !uuidPattern.matcher(uuid).find()) error.append("Invalid verification uuid\n");
             if (order < 0) error.append("Verification order must start with 0. < 0 order is not supported");
             if (description.isBlank()) error.append("Verification description is required");
             if (!error.isEmpty()) throw new OSQAValidationException(error.toString());
+        }
+        public OSQAVerification(String uuid, Integer order, String description){
+            this(uuid,order,description,false);
         }
     }
     record OSQAOutcome(
@@ -94,6 +104,23 @@ public sealed interface OSQAModel {
             var error = new StringBuilder();
             if (fileName.isBlank()) error.append("Invalid file name");
             if (absPath == null) error.append("Abs Path cannot be null");
+            if (!error.isEmpty()) throw new OSQAValidationException(error.toString());
+        }
+    }
+    record OSQAProduct(
+            String uuid,
+            String name,
+            String target,
+            Path projectDir
+    ) implements OSQAModel {
+        public OSQAProduct {
+            var uuidPattern = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}");
+            var error = new StringBuilder();
+            if (uuid.isBlank() || !uuidPattern.matcher(uuid).find()) error.append("Invalid product uuid\n");
+            if (!error.isEmpty()) throw new OSQAValidationException(error.toString());
+            if (name.isBlank()) error.append("Product name cannot be blank");
+            if (target.isBlank()) error.append("Platform target cannot be blank");
+            if (!Files.exists(projectDir)) error.append("Invalid project directory: Folder does not exist");
             if (!error.isEmpty()) throw new OSQAValidationException(error.toString());
         }
     }

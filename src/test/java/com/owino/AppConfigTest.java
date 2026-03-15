@@ -15,20 +15,22 @@ package com.owino;
  * You should have received a copy of the GNU General Public License
  * along with OSQA.  If not, see <https://www.gnu.org/licenses/>.
  */
-import com.owino.conf.OSQAConfig;
 import com.owino.core.Result;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import com.owino.core.OSQAModel.OSQAModule;
+import java.util.UUID;
+import java.time.LocalDateTime;
+import com.owino.core.OSQAConfig;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import com.owino.core.OSQAModel.OSQAProduct;
+import com.owino.core.OSQAModel.OSQAFeature;
 import com.owino.core.OSQAModel.OSQATestCase;
 import com.owino.core.OSQAModel.OSQATestSpec;
 import com.owino.core.OSQAModel.OSQAVerification;
@@ -37,12 +39,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class AppConfigTest {
     private final String TEST_CASE_SPEC_FILE = "data/test-001-spec.json";
-    private Path modulesFile;
+    private Path featuresFile;
     private Path testSpecFile;
     @BeforeEach
     public void setUp() throws IOException {
         deleteAppDataFolder();
-        prepareModuleFile();
+        prepareFeatureFile();
         var filePath = Paths.get(TEST_CASE_SPEC_FILE);
         testSpecFile = Files.createFile(filePath);
         assertThat(testSpecFile).isNotNull();
@@ -52,38 +54,38 @@ public class AppConfigTest {
             assertThat(stream.count()).isGreaterThan(0);
         }
     }
-    private void prepareModuleFile() throws IOException {
+    private void prepareFeatureFile() throws IOException {
         var filePath = Paths.get(OSQAConfig.MODULE_FILE);
         Files.createDirectory(Paths.get("data"));
-        modulesFile = Files.createFile(filePath);
-        assertThat(modulesFile).isNotNull();
-        assertThat(Files.exists(modulesFile)).isTrue();
-        Files.write(modulesFile, List.of(modulesJson.split("\n")));
-        try (var stream = Files.lines(modulesFile)) {
+        featuresFile = Files.createFile(filePath);
+        assertThat(featuresFile).isNotNull();
+        assertThat(Files.exists(featuresFile)).isTrue();
+        Files.write(featuresFile, List.of(featuresJson.split("\n")));
+        try (var stream = Files.lines(featuresFile)) {
             assertThat(stream.count()).isGreaterThan(0);
         }
     }
     @Test
-    public void shouldLoadModulesListFileTest() {
-        Result<Void> result = OSQAConfig.loadModulesListFile();
+    public void shouldLoadFeaturesListFileTest() {
+        Result<Void> result = OSQAConfig.loadFeaturesListFile();
         System.out.println(result);
         assertThat(result instanceof Result.Success<Void>).isTrue();
     }
     @Test
-    public void shouldComposeModuleListTest() {
-        Result<Void> result = OSQAConfig.loadModulesListFile();
+    public void shouldComposeFeatureListTest() {
+        Result<Void> result = OSQAConfig.loadFeaturesListFile();
         assertThat(result instanceof Result.Success).isTrue();
-        Result<OSQAModule> loadModulesResult = OSQAConfig.loadModule(OSQAConfig.MODULE_FILE);
-        assertThat(loadModulesResult instanceof Result.Success<OSQAModule>).isTrue();
-        var calendarAndNavModule = ((Result.Success<OSQAModule>) loadModulesResult).value();
-        assertThat(calendarAndNavModule).isNotNull();
-        assertThat(calendarAndNavModule);
-        assertThat(calendarAndNavModule).isNotNull();
-        assertThat(calendarAndNavModule.uuid()).isEqualTo("a76b4d46-e7df-43ea-afec-221b899ae527");
-        assertThat(calendarAndNavModule.name()).isEqualTo("Core Calendar and Navigation");
-        assertThat(calendarAndNavModule.description()).isEqualTo("Validates basic calendar rendering, navigation controls, and fundamental UI elements.");
-        assertThat(calendarAndNavModule.priority()).isEqualTo("Critical");
-        List<OSQATestCase> testCases = calendarAndNavModule.testCases();
+        Result<OSQAFeature> loadFeaturesResult = OSQAConfig.loadFeature(OSQAConfig.MODULE_FILE);
+        assertThat(loadFeaturesResult instanceof Result.Success<OSQAFeature>).isTrue();
+        var calendarAndNavFeature = ((Result.Success<OSQAFeature>) loadFeaturesResult).value();
+        assertThat(calendarAndNavFeature).isNotNull();
+        assertThat(calendarAndNavFeature);
+        assertThat(calendarAndNavFeature).isNotNull();
+        assertThat(calendarAndNavFeature.uuid()).isEqualTo("a76b4d46-e7df-43ea-afec-221b899ae527");
+        assertThat(calendarAndNavFeature.name()).isEqualTo("Core Calendar and Navigation");
+        assertThat(calendarAndNavFeature.description()).isEqualTo("Validates basic calendar rendering, navigation controls, and fundamental UI elements.");
+        assertThat(calendarAndNavFeature.priority()).isEqualTo("Critical");
+        List<OSQATestCase> testCases = calendarAndNavFeature.testCases();
         assertThat(testCases).isNotNull();
         assertThat(testCases).isNotEmpty();
         Optional<OSQATestCase> testCase = testCases.stream().findFirst();
@@ -99,8 +101,8 @@ public class AppConfigTest {
                 "a06e2598-bed3-4393-b6a2-9645b6bfa294",
                 "On Device B, mark the 'Team Sync' task as complete.",
                 List.of(
-                        new OSQAVerification(1,"On Device B, the task is marked complete and a new instance appears with the correct future date."),
-                        new OSQAVerification(2,"On Device A, after a sync/refresh, the original task is marked complete and the new instance appears with the correct future date.")
+                        new OSQAVerification(UUID.randomUUID().toString(),1,"On Device B, the task is marked complete and a new instance appears with the correct future date."),
+                        new OSQAVerification(UUID.randomUUID().toString(),2,"On Device A, after a sync/refresh, the original task is marked complete and the new instance appears with the correct future date.")
                 ));
         var testCase = new OSQATestCase(
                 "47196d64-56f8-4ad3-b96e-24acbc907af7",
@@ -121,22 +123,22 @@ public class AppConfigTest {
     }
     @Test
     public void shouldRejectInvalidJsonFieldsTest() throws IOException{
-        Files.deleteIfExists(modulesFile);
+        Files.deleteIfExists(featuresFile);
         var filePath = Paths.get(OSQAConfig.MODULE_FILE);
-        modulesFile = Files.createFile(filePath);
-        assertThat(modulesFile).isNotNull();
-        assertThat(Files.exists(modulesFile)).isTrue();
-        Files.write(modulesFile, List.of(invalidModulesJson.split("\n")));
-        try(var stream = Files.lines(modulesFile)){
+        featuresFile = Files.createFile(filePath);
+        assertThat(featuresFile).isNotNull();
+        assertThat(Files.exists(featuresFile)).isTrue();
+        Files.write(featuresFile, List.of(invalidFeaturesJson.split("\n")));
+        try(var stream = Files.lines(featuresFile)){
             assertThat(stream.count()).isGreaterThan(0);
         }
-        Result<Void> result = OSQAConfig.loadModulesListFile();
+        Result<Void> result = OSQAConfig.loadFeaturesListFile();
         assertThat(result instanceof Result.Success).isTrue();
-        assertThatThrownBy(() -> OSQAConfig.loadModule(OSQAConfig.MODULE_FILE))
+        assertThatThrownBy(() -> OSQAConfig.loadFeature(OSQAConfig.MODULE_FILE))
                 .isInstanceOf(ValueInstantiationException.class);
     }
     @Test
-    public void shouldGenerateTimestampedModuleFileNameTest(){
+    public void shouldGenerateTimestampedFeatureFileNameTest(){
         var expectedFileName = "2025-11-20-08-34-40.json";
         var extension = "json";
         var created = LocalDateTime.of(2025,11,20,8,34,40);
@@ -147,7 +149,7 @@ public class AppConfigTest {
     @Test
     public void shouldWriteSpecFileTest() throws IOException {
         var uuid = "5833312b-7c84-4e6d-a067-622eb2156761";
-        var verification = new OSQAVerification(0,"verification step");
+        var verification = new OSQAVerification(UUID.randomUUID().toString(),0,"verification step");
         var specification = new OSQATestSpec(uuid,"Launch application",List.of(verification));
         var timestamp = LocalDateTime.of(2000,11,21,10,55,30);
         var specFile = OSQAConfig.timestampedName(timestamp,"json");
@@ -157,11 +159,11 @@ public class AppConfigTest {
         Files.deleteIfExists(Paths.get(specFile));
     }
     @Test
-    public void shouldWriteModulesConfFileTest() throws IOException {
+    public void shouldWriteFeaturesConfFileTest() throws IOException {
         var uuid = "5833312b-7c84-4e6d-a067-622eb2156761";
         var testSpec = new OSQATestCase(uuid,"testcase","specfile.json");
-        var module = new OSQAModule(uuid,"Launch application","Module notes","Critical",List.of(testSpec));
-        var result = OSQAConfig.writeModule(Paths.get(OSQAConfig.MODULE_DIR),module);
+        var feature = new OSQAFeature(uuid,"5833312b-7c84-4e6d-a067-622eb2156761","Launch application","Feature notes","Critical",List.of(testSpec));
+        var result = OSQAConfig.writeFeature(Paths.get(OSQAConfig.MODULE_DIR),feature);
         IO.println(result);
         assertThat(result instanceof Result.Success<Path>).isTrue();
         var path = ((Result.Success<Path>) result).value();
@@ -170,30 +172,30 @@ public class AppConfigTest {
         Files.deleteIfExists(((Result.Success<Path>) result).value());
     }
     @Test
-    public void shouldFindAndListModuleConfFilesTest() throws IOException {
+    public void shouldFindAndListFeatureConfFilesTest() throws IOException {
         var uuid = "5833312b-7c84-4e6d-a067-622eb2156761";
-        var moduleTitle = "Launch application";
+        var featureTitle = "Launch application";
         var testSpec = new OSQATestCase(uuid,"testcase","specfile.json");
-        var module = new OSQAModule(uuid,moduleTitle,"Module notes","Critical",List.of(testSpec));
-        var result = OSQAConfig.writeModule(Paths.get(OSQAConfig.MODULE_DIR),module);
+        var feature = new OSQAFeature(uuid,"5833312b-7c84-4e6d-a067-622eb2156761",featureTitle,"Feature notes","Critical",List.of(testSpec));
+        var result = OSQAConfig.writeFeature(Paths.get(OSQAConfig.MODULE_DIR),feature);
         IO.println(result);
         assertThat(result instanceof Result.Success<Path>).isTrue();
         var path = ((Result.Success<Path>) result).value();
         assertThat(Files.exists(path)).isTrue();
-        Result<List<OSQAModule>> modulesResult = OSQAConfig.listModules(Paths.get(OSQAConfig.MODULE_DIR));
-        IO.println(modulesResult);
-        assertThat(modulesResult instanceof Result.Success<List<OSQAModule>>).isTrue();
-        var modules = ((Result.Success<List<OSQAModule>>) modulesResult).value();
-        assertThat(modules).isNotEmpty();
-        assertThat(modules.getFirst()).isNotNull();
-        assertThat(modules.getFirst().name()).isNotEmpty();
-        assertThat(modules.getFirst().description()).isNotEmpty();
+        Result<List<OSQAFeature>> featuresResult = OSQAConfig.listFeatures(Paths.get(OSQAConfig.MODULE_DIR));
+        IO.println(featuresResult);
+        assertThat(featuresResult instanceof Result.Success<List<OSQAFeature>>).isTrue();
+        var features = ((Result.Success<List<OSQAFeature>>) featuresResult).value();
+        assertThat(features).isNotEmpty();
+        assertThat(features.getFirst()).isNotNull();
+        assertThat(features.getFirst().name()).isNotEmpty();
+        assertThat(features.getFirst().description()).isNotEmpty();
         Files.deleteIfExists(path);
     }
     @Test
     public void shouldOverwriteSpecFileTest(){
         var uuid = "5833312b-7c84-4e6d-a067-622eb2156761";
-        var verification = new OSQAVerification(0,"verification step");
+        var verification = new OSQAVerification(UUID.randomUUID().toString(),0,"verification step");
         var specification = new OSQATestSpec(uuid,"Launch application",List.of(verification));
         var timestamp = LocalDateTime.of(2000,11,21,10,55,30);
         var specFile = OSQAConfig.timestampedName(timestamp,"json");
@@ -212,10 +214,8 @@ public class AppConfigTest {
         assertThat(preOverwriteSpec.verifications().getFirst()).isNotNull();
         assertThat(preOverwriteSpec.verifications().getFirst().order()).isEqualTo(verification.order());
         assertThat(preOverwriteSpec.verifications().getFirst().description()).isEqualTo(verification.description());
-
-        var newVerification = new OSQAVerification(0,"verification step");
+        var newVerification = new OSQAVerification(UUID.randomUUID().toString(),0,"verification step");
         var updatedSpec = new OSQATestSpec(uuid,"Launch application",List.of(verification,newVerification));
-
         var overwriteResult = OSQAConfig.overwriteSpecFile(updatedSpec,testCase);
         assertThat(overwriteResult instanceof Result.Success<Void>).isTrue();
         var testSpecLoadResult = OSQAConfig.loadTestCaseSpec(testCase);
@@ -227,6 +227,115 @@ public class AppConfigTest {
         assertThat(specOverwrite.verifications().size()).isEqualTo(updatedSpec.verifications().size());
         assertThat(specOverwrite.verifications().size()).isGreaterThan(1);
         assertThat(specOverwrite.verifications().size()).isEqualTo(2);
+    }
+    @Test
+    public void shouldCreateOrUpdateVerificationStatusTest(){
+        var uuid = "5833312b-7c84-4e6d-a067-622eb2156761";
+        var verification = new OSQAVerification(UUID.randomUUID().toString(),0,"verification step");
+        var specification = new OSQATestSpec(uuid,"Launch application",List.of(verification));
+        var timestamp = LocalDateTime.of(2000,11,21,10,55,30);
+        var specFile = OSQAConfig.timestampedName(timestamp,"json");
+        var appDir = Paths.get(OSQAConfig.MODULE_DIR);
+        var filePath = appDir.toAbsolutePath().toString().concat("/").concat(specFile);
+        var testCase = new OSQATestCase(uuid,"Test Case",filePath);
+        var result = OSQAConfig.writeSpecFile(appDir,specification,specFile);
+        IO.println(result);
+        assertThat(result instanceof Result.Success<Void>).isTrue();
+        var preOverwriteTestSpecLoadResult = OSQAConfig.loadTestCaseSpec(testCase);
+        IO.println("load pre overwrite test spec: result : " + preOverwriteTestSpecLoadResult);
+        assertThat(preOverwriteTestSpecLoadResult instanceof Result.Success<OSQATestSpec>).isTrue();
+        OSQATestSpec preOverwriteSpec = ((Result.Success<OSQATestSpec>) preOverwriteTestSpecLoadResult).value();
+        assertThat(preOverwriteSpec).isNotNull();
+        assertThat(preOverwriteSpec.verifications().size()).isEqualTo(1);
+        assertThat(preOverwriteSpec.verifications().getFirst()).isNotNull();
+        assertThat(preOverwriteSpec.verifications().getFirst().order()).isEqualTo(verification.order());
+        assertThat(preOverwriteSpec.verifications().getFirst().description()).isEqualTo(verification.description());
+        var updatedVerifications = preOverwriteSpec.verifications()
+                .stream()
+                .map(e -> new OSQAVerification(e.uuid(),e.order(),e.description(),true))
+                .toList();
+        var updatedSpec = new OSQATestSpec(preOverwriteSpec.uuid(),preOverwriteSpec.action(),updatedVerifications);
+        var overwriteResult = OSQAConfig.overwriteSpecFile(updatedSpec,testCase);
+        assertThat(overwriteResult instanceof Result.Success<Void>).isTrue();
+        var testSpecLoadResult = OSQAConfig.loadTestCaseSpec(testCase);
+        IO.println(result);
+        assertThat(testSpecLoadResult instanceof Result.Success<OSQATestSpec>).isTrue();
+        OSQATestSpec specOverwrite = ((Result.Success<OSQATestSpec>) testSpecLoadResult).value();
+        assertThat(specOverwrite).isNotNull();
+        assertThat(specOverwrite.action()).isEqualTo(updatedSpec.action());
+        assertThat(specOverwrite.verifications().size()).isEqualTo(updatedSpec.verifications().size());
+        assertThat(specOverwrite.verifications().getFirst().uuid()).isEqualTo(updatedSpec.verifications().getFirst().uuid());
+        assertThat(specOverwrite.verifications().getFirst().description()).isEqualTo(updatedSpec.verifications().getFirst().description());
+        assertThat(specOverwrite.verifications().getFirst().verificationStatus()).isEqualTo(updatedSpec.verifications().getFirst().verificationStatus());
+        assertThat(specOverwrite.verifications().getFirst().verificationStatus()).isEqualTo(true);
+    }
+    @Test
+    public void shouldUpdateVerificationStatusTest(){
+        var uuid = "5833312b-7c84-4e6d-a067-622eb2156761";
+        var verification = new OSQAVerification(UUID.randomUUID().toString(),0,"verification step 1",false);
+        var verificationStep2 = new OSQAVerification(UUID.randomUUID().toString(),0,"verification step 2",false);
+        var specification = new OSQATestSpec(uuid,"Launch application",List.of(verification,verificationStep2));
+        var timestamp = LocalDateTime.of(2000,11,21,10,55,30);
+        var specFile = OSQAConfig.timestampedName(timestamp,"json");
+        var appDir = Paths.get(OSQAConfig.MODULE_DIR);
+        var filePath = appDir.toAbsolutePath().toString().concat("/").concat(specFile);
+        var testCase = new OSQATestCase(uuid,"Test Case",filePath);
+        var result = OSQAConfig.writeSpecFile(appDir,specification,specFile);
+        IO.println(result);
+        assertThat(result instanceof Result.Success<Void>).isTrue();
+        var updatedVerification1 = new OSQAVerification(verification.uuid(),verification.order(),verification.description(),true);
+        Result<OSQATestSpec> updatedResult = OSQAConfig.updateVerificationStatus(specification,testCase,updatedVerification1);
+        assertThat(updatedResult).isInstanceOf(Result.Success.class);
+        var testSpecLoadResult = OSQAConfig.loadTestCaseSpec(testCase);
+        IO.println(result);
+        assertThat(testSpecLoadResult instanceof Result.Success<OSQATestSpec>).isTrue();
+        OSQATestSpec specOverwrite = ((Result.Success<OSQATestSpec>) testSpecLoadResult).value();
+        assertThat(specOverwrite).isNotNull();
+        assertThat(specOverwrite.action()).isEqualTo(specification.action());
+        assertThat(specOverwrite.verifications().size()).isEqualTo(specification.verifications().size());
+        var firstVerification = specOverwrite.verifications().stream()
+                .filter(e -> e.uuid().equals(verification.uuid()))
+                .toList().getFirst();
+        var secondVerification = specOverwrite.verifications().stream()
+                .filter(e -> e.uuid().equals(verificationStep2.uuid()))
+                .toList().getFirst();
+        assertThat(firstVerification).isNotNull();
+        assertThat(firstVerification.uuid()).isEqualTo(verification.uuid());
+        assertThat(firstVerification.description()).isEqualTo(verification.description());
+        assertThat(firstVerification.verificationStatus()).isNotEqualTo(verification.verificationStatus());
+        assertThat(firstVerification.verificationStatus()).isEqualTo(true);
+        assertThat(secondVerification).isNotNull();
+        assertThat(secondVerification.uuid()).isEqualTo(verificationStep2.uuid());
+        assertThat(secondVerification.description()).isEqualTo(verificationStep2.description());
+        assertThat(secondVerification.verificationStatus()).isEqualTo(verificationStep2.verificationStatus());
+    }
+    @Test
+    public void shouldCalculateFeatureVerificationProgress() throws IOException{
+        var verifications = List.of(
+                new OSQAVerification("54df4e30-b691-4ebb-93a2-a294a10b49ea",0,"verification step 1",false),
+                new OSQAVerification("2e88a797-7017-40cb-887b-498902880482",0,"verification step 2",false),
+                new OSQAVerification("0cd7bc7d-e11e-49ad-b4ad-444978ef93aa",0,"verification step 3",false),
+                new OSQAVerification("5f6a8fa4-9f80-4b9e-9474-f308705f378c",0,"verification step 4",true)
+        );
+        var specification = new OSQATestSpec("6321e37d-b049-4d0f-8d50-3e7e10bef317","Launch application",verifications);
+        var timestamp = LocalDateTime.of(2000,11,21,10,55,30);
+        var specFile = OSQAConfig.timestampedName(timestamp,"json");
+        var result = OSQAConfig.writeSpecFile(Paths.get(OSQAConfig.MODULE_DIR),specification,specFile);
+        assertThat(result instanceof Result.Success<Void>).isTrue();
+        var testCase = new OSQATestCase("b37c79fd-a803-4c83-953d-1240af36960a","Test Case",OSQAConfig.MODULE_DIR + "/" + specFile);
+        var feature = new OSQAFeature(
+                "9f8fcf88-fb9e-4b62-88f0-30a77b2883a3",
+                "e18b9af0-f984-4dd3-9174-782b2c70033a",
+                "Feature Name","Feature description","HIGH",
+                List.of(testCase));
+        var actualCompletionCount = OSQAConfig.calculateFeatureVerificationProgress(feature);
+        var expectedCompletion = 25;
+        assertThat(actualCompletionCount).isInstanceOf(Result.Success.class);
+        if (actualCompletionCount instanceof Result.Success<Long>(Long progress)){
+            assertThat(progress).isGreaterThan(0);
+            assertThat(progress).isEqualTo(expectedCompletion);
+        }
+        Files.deleteIfExists(Paths.get(specFile));
     }
     @AfterEach
     public void tearDown() throws IOException {
@@ -247,9 +356,10 @@ public class AppConfigTest {
             }
         }
     }
-    private final String modulesJson = """
+    private final String featuresJson = """
             {
                 "uuid": "a76b4d46-e7df-43ea-afec-221b899ae527",
+                "productUuid": "a76b4d46-e7df-43ea-afec-221b899ae527",
                 "name": "Core Calendar and Navigation",
                 "description": "Validates basic calendar rendering, navigation controls, and fundamental UI elements.",
                 "priority": "Critical",
@@ -262,9 +372,10 @@ public class AppConfigTest {
                 ]
               }
             """;
-    private final String invalidModulesJson = """
+    private final String invalidFeaturesJson = """
             {
                 "uuid": "uuid",
+                "productUuid": "",
                 "name": "",
                 "description": "",
                 "priority": "",
@@ -283,12 +394,16 @@ public class AppConfigTest {
                 "action": "On Device B, mark the 'Team Sync' task as complete.",
                 "verifications": [
                   {
+                    "uuid": "a76b4d46-e7df-43ea-afec-221b899ae527",
                     "order": 1,
-                    "description": "On Device B, the task is marked complete and a new instance appears with the correct future date."
+                    "description": "On Device B, the task is marked complete and a new instance appears with the correct future date.",
+                    "verificationStatus": false
                   },
                   {
+                    "uuid": "a76b4d46-e7df-43ea-afec-221b899ae527",
                     "order": 2,
-                    "description": "On Device A, after a sync/refresh, the original task is marked complete and the new instance appears with the correct future date."
+                    "description": "On Device A, after a sync/refresh, the original task is marked complete and the new instance appears with the correct future date.",
+                    "verificationStatus": false
                   }
                 ]
             }
