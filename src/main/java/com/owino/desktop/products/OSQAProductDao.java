@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.nio.file.Paths;
 import java.sql.Connection;
+
+import com.owino.core.OSQAModel;
 import com.owino.core.Result;
 import java.sql.SQLException;
 import java.sql.DriverManager;
@@ -48,14 +50,6 @@ public class OSQAProductDao {
     }
     public static Result<Void> saveProduct(OSQAProduct product){
         try {
-            var schemaSql = """
-                CREATE TABLE IF NOT EXISTS Products (
-                    uuid TEXT PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    target TEXT NOT NULL,
-                    projectDir TEXT NOT NULL
-                );
-                """;
             var insertSql = """
                 INSERT INTO Products VALUES(?,?,?,?);
                 """;
@@ -63,8 +57,6 @@ public class OSQAProductDao {
             if (!(resultConn instanceof Result.Success<Connection> (Connection connection))){
                 return Result.failure("Failed to open database connection");
             }
-            var schemaStatement = connection.createStatement();
-            schemaStatement.execute(schemaSql);
             var insertStatement = connection.prepareStatement(insertSql);
             insertStatement.setString(1,product.uuid());
             insertStatement.setString(2,product.name());
@@ -97,6 +89,46 @@ public class OSQAProductDao {
             return Result.success(products);
         } catch (SQLException failure){
             return Result.failure("Failed to load products list: " + failure.getLocalizedMessage());
+        }
+    }
+    public static Result<Void> initSchema(){
+        try {
+            var schemaSql = """
+                CREATE TABLE IF NOT EXISTS Products (
+                    uuid TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    target TEXT NOT NULL,
+                    projectDir TEXT NOT NULL
+                );
+                """;
+            var resultConn = connection();
+            if (!(resultConn instanceof Result.Success<Connection> (Connection connection))){
+                return Result.failure("Failed to open database connection");
+            }
+            var schemaStatement = connection.createStatement();
+            schemaStatement.execute(schemaSql);
+            return Result.success(null);
+        } catch (SQLException error){
+            return Result.failure(error.getLocalizedMessage());
+        }
+    }
+
+    public static Result<Void> delete(OSQAProduct product) {
+        try {
+            var deleteSql = """
+                DELETE FROM Products
+                WHERE uuid = ?
+                """;
+            var result = connection();
+            if (!(result instanceof Result.Success<Connection> (Connection connection))){
+                return Result.failure("Failed to open database connection");
+            }
+            var statement = connection.prepareStatement(deleteSql);
+            statement.setString(1,product.uuid());
+            statement.executeUpdate();
+            return Result.success(null);
+        } catch (SQLException error){
+            return Result.failure(error.getLocalizedMessage());
         }
     }
 }

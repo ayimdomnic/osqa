@@ -24,12 +24,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.Optional;
+
+import com.owino.core.OSQAModel;
 import com.owino.core.Result;
 import java.time.LocalDateTime;
 import com.owino.core.OSQAConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import com.owino.core.OSQAModel.OSQAProduct;
 import com.owino.core.OSQAModel.OSQAFeature;
 import com.owino.core.OSQAModel.OSQATestCase;
 import com.owino.core.OSQAModel.OSQATestSpec;
@@ -162,8 +165,17 @@ public class AppConfigTest {
     public void shouldWriteFeaturesConfFileTest() throws IOException {
         var uuid = "5833312b-7c84-4e6d-a067-622eb2156761";
         var testSpec = new OSQATestCase(uuid,"testcase","specfile.json");
-        var feature = new OSQAFeature(uuid,"5833312b-7c84-4e6d-a067-622eb2156761","Launch application","Feature notes","Critical",List.of(testSpec));
-        var result = OSQAConfig.writeFeature(Paths.get(OSQAConfig.MODULE_DIR),feature);
+        var prefix = "feature";
+        var appDataDir = Paths.get(OSQAConfig.MODULE_DIR);
+        var nameBuilder = new StringBuilder(appDataDir.toUri().getPath());
+        var featureTitle = "Feature notes";
+        nameBuilder.append(File.separator);
+        nameBuilder.append(prefix);
+        nameBuilder.append(featureTitle.replaceAll(" ",""));
+        nameBuilder.append(OSQAConfig.timestampedName(LocalDateTime.now(),"json"));
+        var fileName = nameBuilder.toString();
+        var feature = new OSQAFeature(uuid,"5833312b-7c84-4e6d-a067-622eb2156761","Launch application",featureTitle,"Critical",fileName,List.of(testSpec));
+        var result = OSQAConfig.writeFeature(feature);
         IO.println(result);
         assertThat(result instanceof Result.Success<Path>).isTrue();
         var path = ((Result.Success<Path>) result).value();
@@ -175,9 +187,17 @@ public class AppConfigTest {
     public void shouldFindAndListFeatureConfFilesTest() throws IOException {
         var uuid = "5833312b-7c84-4e6d-a067-622eb2156761";
         var featureTitle = "Launch application";
+        var appDataDir = Paths.get(OSQAConfig.MODULE_DIR);
         var testSpec = new OSQATestCase(uuid,"testcase","specfile.json");
-        var feature = new OSQAFeature(uuid,"5833312b-7c84-4e6d-a067-622eb2156761",featureTitle,"Feature notes","Critical",List.of(testSpec));
-        var result = OSQAConfig.writeFeature(Paths.get(OSQAConfig.MODULE_DIR),feature);
+        var nameBuilder = new StringBuilder(appDataDir.toUri().getPath());
+        var prefix = "feature";
+        nameBuilder.append(File.separator);
+        nameBuilder.append(prefix);
+        nameBuilder.append(featureTitle.replaceAll(" ",""));
+        nameBuilder.append(OSQAConfig.timestampedName(LocalDateTime.now(),"json"));
+        var fileName = nameBuilder.toString();
+        var feature = new OSQAFeature(uuid,"5833312b-7c84-4e6d-a067-622eb2156761",featureTitle,"Feature notes","Critical",fileName,List.of(testSpec));
+        var result = OSQAConfig.writeFeature(feature);
         IO.println(result);
         assertThat(result instanceof Result.Success<Path>).isTrue();
         var path = ((Result.Success<Path>) result).value();
@@ -323,10 +343,19 @@ public class AppConfigTest {
         var result = OSQAConfig.writeSpecFile(Paths.get(OSQAConfig.MODULE_DIR),specification,specFile);
         assertThat(result instanceof Result.Success<Void>).isTrue();
         var testCase = new OSQATestCase("b37c79fd-a803-4c83-953d-1240af36960a","Test Case",OSQAConfig.MODULE_DIR + File.separator + specFile);
+        var featureTitle = "Feature Name";
+        var appDataDir = Paths.get(OSQAConfig.MODULE_DIR);
+        var nameBuilder = new StringBuilder(appDataDir.toUri().getPath());
+        var prefix = "feature";
+        nameBuilder.append(File.separator);
+        nameBuilder.append(prefix);
+        nameBuilder.append(featureTitle.replaceAll(" ",""));
+        nameBuilder.append(OSQAConfig.timestampedName(LocalDateTime.now(),"json"));
+        var fileName = nameBuilder.toString();
         var feature = new OSQAFeature(
                 "9f8fcf88-fb9e-4b62-88f0-30a77b2883a3",
                 "e18b9af0-f984-4dd3-9174-782b2c70033a",
-                "Feature Name","Feature description","HIGH",
+                featureTitle,"Feature description","HIGH",fileName,
                 List.of(testCase));
         var actualCompletionCount = OSQAConfig.calculateFeatureVerificationProgress(feature);
         var expectedCompletion = 25;
@@ -352,9 +381,60 @@ public class AppConfigTest {
             IO.println("Active Profile:" + profile);
         }
     }
+    @Test
+    public void shouldDeleteFeatureTest(){
+        var specFile = OSQAConfig.timestampedName(LocalDateTime.now(),"json");
+        var appDir = Paths.get(OSQAConfig.MODULE_DIR);
+        var filePath = appDir.toAbsolutePath().toString().concat(File.separator).concat(specFile);
+        var testCase = new OSQATestCase("73bbcc66-78aa-45ed-956b-f605296a458b","Test Case",filePath);
+        var featureTitle = "Feature Name";
+        var featureNameBuilder = new StringBuilder(appDir.toUri().getPath());
+        var prefix = "feature";
+        featureNameBuilder.append(prefix);
+        featureNameBuilder.append(featureTitle.replaceAll(" ",""));
+        featureNameBuilder.append(OSQAConfig.timestampedName(LocalDateTime.now(),"json"));
+        var fileName = featureNameBuilder.toString();
+        var feature = new OSQAFeature(
+                "91df8a35-6224-4dbc-8c84-a87bb49ac05d",
+                "3f16844a-285f-4fc2-894b-65d96fd3a212",
+                "Feature Name",
+                "Feature description",
+                "CRITICAL",fileName,List.of(testCase));
+
+        var feature2NameBuilder = new StringBuilder(appDir.toUri().getPath());
+        feature2NameBuilder.append(File.separator);
+        feature2NameBuilder.append(prefix);
+        feature2NameBuilder.append(featureTitle.replaceAll(" ",""));
+        feature2NameBuilder.append(OSQAConfig.timestampedName(LocalDateTime.now(),"json"));
+        var file2Name = feature2NameBuilder.toString();
+        var feature2 = new OSQAFeature(
+                "91df8a35-6224-4dbc-8c84-a87bb49ac05d",
+                "3f16844a-285f-4fc2-894b-65d96fd3a212",
+                "Second Feature Name",
+                "Feature description",
+                "CRITICAL",file2Name,List.of(testCase));
+        var writeResult = OSQAConfig.writeFeature(feature);
+        var feature2WriteResult = OSQAConfig.writeFeature(feature2);
+        assertThat(writeResult).isInstanceOf(Result.Success.class);
+        assertThat(feature2WriteResult).isInstanceOf(Result.Success.class);
+        var deleteResult = OSQAConfig.deleteFeature(feature);
+        assertThat(deleteResult).isInstanceOf(Result.Success.class);
+        var listFeaturesResult = OSQAConfig.listFeatures(appDir);
+        assertThat(listFeaturesResult).isInstanceOf(Result.Success.class);
+        if (listFeaturesResult instanceof Result.Success<List<OSQAFeature>>(List<OSQAFeature> features)){
+            assertThat(features).isNotEmpty();
+        }
+    }
+    @Test
+    public void shouldMigrateLegacyFeaturesTest(){
+        var appDir = Paths.get(OSQAConfig.MODULE_DIR);
+        var product = new OSQAProduct("08363eb4-4b7d-4c70-8853-f129dcd78835","Test Product","Android",appDir);
+        var result = OSQAConfig.migrateLegacyFeatures(product);
+        assertThat(result).isInstanceOf(Result.Success.class);
+    }
     @AfterEach
     public void tearDown() throws IOException {
-        deleteAppDataFolder();
+       deleteAppDataFolder();
     }
     private static void deleteAppDataFolder() throws IOException {
         var directory = Paths.get("data");
@@ -378,6 +458,7 @@ public class AppConfigTest {
                 "name": "Core Calendar and Navigation",
                 "description": "Validates basic calendar rendering, navigation controls, and fundamental UI elements.",
                 "priority": "Critical",
+                "filePath": "testFile",
                 "testCases": [
                   {
                     "uuid": "0b8c4bf2-4590-4b01-bda2-cf7271a76789",
@@ -394,6 +475,7 @@ public class AppConfigTest {
                 "name": "",
                 "description": "",
                 "priority": "",
+                "filePath": "",
                 "testCases": [
                   {
                     "uuid": "uuid",

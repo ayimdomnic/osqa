@@ -16,6 +16,7 @@ package com.owino.desktop.features;
  * along with OSQA.  If not, see <https://www.gnu.org/licenses/>.
  */
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
 import java.util.Optional;
@@ -113,14 +114,23 @@ public class FeatureFormView extends ScrollPane {
             testCases.add(testCase);
             var featureTitle = featureTitleTextField.getText();
             var featureDescription = descriptionTextField.getText();
+            var prefix = "feature";
+            var fileNameBuilder = new StringBuilder(appDir.toUri().getPath());
+            fileNameBuilder.append(File.separator);
+            fileNameBuilder.append(prefix);
+            fileNameBuilder.append(featureTitle.replaceAll(" ",""));
+            fileNameBuilder.append(OSQAConfig.timestampedName(LocalDateTime.now(),"json"));
+            var fileName = fileNameBuilder.toString();
+            var path = Paths.get(fileName);
             var feature = new OSQAFeature(
                     UUID.randomUUID().toString(),
                     selectedProduct.uuid(),
                     featureTitle,
                     featureDescription,
                     "Critical",
+                    path.getFileName().toAbsolutePath().toString(),
                     testCases);
-            OSQAConfig.writeFeature(appDir,feature);
+            OSQAConfig.writeFeature(feature);
             IO.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(feature));
             Alert successAlert = new Alert(Alert.AlertType.NONE);
             successAlert.setTitle("Success!");

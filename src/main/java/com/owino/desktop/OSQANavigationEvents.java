@@ -25,7 +25,7 @@ public sealed interface OSQANavigationEvents {
             this(UUID.randomUUID().toString(),false);
         }
     }
-    record OpenFeatureDetailedViewEvent(OSQAFeature selectedFeature) implements OSQANavigationEvents {}
+    record OpenFeatureDetailedViewEvent(OSQAFeature selectedFeature, OSQAProduct product) implements OSQANavigationEvents {}
     record OpenFeaturesListViewEvent(OSQAProduct selectedProduct) implements OSQANavigationEvents {}
     record ToggleShowVerificationButtonEvent(boolean show) implements OSQANavigationEvents {}
     record ShowVerificationFormEvent() implements OSQANavigationEvents {}

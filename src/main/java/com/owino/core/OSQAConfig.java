@@ -25,10 +25,13 @@ import java.time.LocalDateTime;
 import java.nio.file.StandardOpenOption;
 import java.time.format.DateTimeFormatter;
 import tools.jackson.databind.ObjectMapper;
+import com.owino.core.OSQAModel.OSQAProduct;
 import com.owino.core.OSQAModel.OSQAFeature;
 import com.owino.core.OSQAModel.OSQATestCase;
 import com.owino.core.OSQAModel.OSQATestSpec;
+import com.owino.desktop.products.OSQAProductDao;
 import com.owino.core.OSQAModel.OSQAVerification;
+import com.owino.core.OSQAModel.OSQAFeatureLegacy;
 public class OSQAConfig {
     public static final String OSQA_DB = "osqa_db";
     public static final String MODULE_FILE = "data" + File.separator + "features.json";
@@ -84,16 +87,9 @@ public class OSQAConfig {
             return Result.failure("Failed to write test spec file:" +ex.getLocalizedMessage());
         }
     }
-    public static Result<Path> writeFeature(Path appDataDir, OSQAFeature feature){
+    public static Result<Path> writeFeature(OSQAFeature feature){
         try {
-            var prefix = "feature";
-            var nameBuilder = new StringBuilder(appDataDir.toUri().getPath());
-            nameBuilder.append(File.separator);
-            nameBuilder.append(prefix);
-            nameBuilder.append(feature.name().replaceAll(" ",""));
-            nameBuilder.append(timestampedName(LocalDateTime.now(),"json"));
-            var fileName = nameBuilder.toString();
-            var path = Paths.get(fileName);
+            var path = Paths.get(feature.filePath());
             Files.writeString(path, new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(feature));
             if (Files.exists(path)) return Result.success(path);
             else return Result.failure("Failed to create features conf file: Error unknown");
@@ -120,6 +116,30 @@ public class OSQAConfig {
                     })
                     .toList();
             if (features.isEmpty()) return Result.failure("Failed to list features: empty result");
+            else return Result.success(features);
+        } catch (IOException err){
+            return Result.failure("Failed to read feature list due to IO error: " + err.getLocalizedMessage());
+        }
+    }
+    public static Result<List<OSQAFeatureLegacy>> listFeaturesLegacy(Path featuresDir) {
+        var folderExists = Files.exists(featuresDir);
+        if (!folderExists) return Result.failure("Failed to list features, app dir does not exist");
+        try(var dirWalk = Files.walk(featuresDir)){
+            List<OSQAFeatureLegacy> features = dirWalk.sorted(Comparator.reverseOrder())
+                    .map(file -> new OSQAModel.OSQAFilesDirTuple(file.getFileName().toString(),file))
+                    .filter(tuple -> tuple.fileName().startsWith("feature") && tuple.fileName().endsWith(".json"))
+                    .map(tuple -> {
+                        try {
+                            var rawContents = Files.readString(tuple.absPath());
+                            if (rawContents.isBlank()) throw new RuntimeException("Failed to read features, file is empty" + tuple.absPath());
+                            IO.println(rawContents);
+                            return new ObjectMapper().readValue(rawContents, OSQAFeatureLegacy.class);
+                        } catch (IOException ex){
+                            throw new RuntimeException("Failed to read features file contents: " + ex.getLocalizedMessage());
+                        }
+                    })
+                    .toList();
+            if (features.isEmpty()) return Result.success(List.of());
             else return Result.success(features);
         } catch (IOException err){
             return Result.failure("Failed to read feature list due to IO error: " + err.getLocalizedMessage());
@@ -207,12 +227,67 @@ public class OSQAConfig {
     }
     public static Result<Void> appInit() {
         var binPathResult = resolveBinDir();
-        return switch (binPathResult){
+        Result<Void> binResult = switch (binPathResult){
             case Result.Success<Path> (Path binPath) -> {
                 if (!Files.exists(binPath)) yield Result.failure("Failed to create OSQA system dir");
                 yield Result.success(null);
             }
             case Result.Failure<Path> (Throwable error) -> Result.failure(error.getLocalizedMessage());
         };
+        if (binResult instanceof Result.Failure<Void>) return binResult;
+        var schemaInitResult = OSQAProductDao.initSchema();
+        if (schemaInitResult instanceof Result.Failure<Void>(Throwable error)) return Result.failure(error.getLocalizedMessage());
+        var productsListResult = OSQAProductDao.listProducts();
+        if (productsListResult instanceof Result.Success<List<OSQAProduct>>(List<OSQAProduct> products)){
+            for (OSQAProduct product : products) {
+                OSQAConfig.migrateLegacyFeatures(product);
+            }
+        }
+        return Result.success(null);
+    }
+    public static Result<Void> deleteFeature(OSQAFeature feature) {
+        try {
+            var affectedFile = feature.filePath();
+            var file = Paths.get(affectedFile);
+            if (!Files.exists(file)) return Result.failure("Failed to delete feature. Internal system failure");
+            IO.println("Deleting feature file " + file.toAbsolutePath());
+            Files.deleteIfExists(file);
+            return Result.success(null);
+        } catch (IOException error){
+            return Result.failure(error.getLocalizedMessage());
+        }
+    }
+    public static Result<Void> migrateLegacyFeatures(OSQAProduct product) {
+        var listLegacyResult = listFeaturesLegacy(product.projectDir());
+        IO.println("migrateLegacyFeatures: " + listLegacyResult);
+        if (listLegacyResult instanceof Result.Success<List<OSQAFeatureLegacy>>(List<OSQAFeatureLegacy> legacyFeatures)){
+            List<OSQAFeature> updatedFeatures = legacyFeatures.stream()
+                    .map(legacy -> {
+                        var featureNameBuilder = new StringBuilder(product.projectDir().toUri().getPath());
+                        var prefix = "feature";
+                        featureNameBuilder.append(prefix);
+                        featureNameBuilder.append(legacy.name().replaceAll(" ",""));
+                        featureNameBuilder.append(OSQAConfig.timestampedName(LocalDateTime.now(),"json"));
+                        var fileName = featureNameBuilder.toString();
+                        return new OSQAFeature(legacy.uuid(),legacy.productUuid(),legacy.name(),legacy.description(),legacy.priority(),fileName,legacy.testCases());
+                    })
+                    .toList();
+            try(var dirWalk = Files.walk(product.projectDir())){
+                dirWalk.sorted(Comparator.reverseOrder())
+                        .filter(file -> file.getFileName().toString().startsWith("feature") && file.getFileName().toString().endsWith(".json"))
+                        .forEach(file -> {
+                            try {
+                                Files.deleteIfExists(file);
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+                updatedFeatures.forEach(updatedFeature -> OSQAConfig.writeFeature(updatedFeature));
+                return Result.success(null);
+            } catch (IOException error){
+                return Result.failure("Failed to migrate legacy features: " + error.getLocalizedMessage());
+            }
+        }
+        return Result.failure("Failed to migrate legacy features. Failed to load legacy features");
     }
 }

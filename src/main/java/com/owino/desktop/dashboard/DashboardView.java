@@ -65,7 +65,7 @@ public class DashboardView extends SplitPane {
     @Subscribe
     public void openFeatureDetailedViewEvent(OpenFeatureDetailedViewEvent event){
         getItems().removeLast();
-        getItems().add(new FeatureDetailedView(event.selectedFeature()));
+        getItems().add(new FeatureDetailedView(event.selectedFeature(),event.product()));
         setDividerPositions(0.05f);
     }
     @Subscribe

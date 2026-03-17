@@ -19,21 +19,24 @@ import java.util.*;
 import com.owino.core.Result;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Priority;
 import javafx.scene.text.Font;
 import javafx.scene.layout.VBox;
 import com.owino.core.OSQAConfig;
 import javafx.scene.layout.Border;
 import javafx.application.Platform;
-import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.EventBus;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import org.greenrobot.eventbus.Subscribe;
+import com.owino.core.OSQAModel.OSQAProduct;
 import com.owino.core.OSQAModel.OSQAFeature;
 import com.owino.core.OSQAModel.OSQATestSpec;
 import com.owino.core.OSQAModel.OSQATestCase;
-import com.owino.desktop.OSQANavigationEvents;
 import com.owino.core.OSQAModel.OSQAVerification;
 import com.owino.desktop.OSQANavigationEvents.ResetVerificationsEvent;
+import com.owino.desktop.OSQANavigationEvents.OpenFeaturesListViewEvent;
 import com.owino.desktop.OSQANavigationEvents.ShowVerificationFormEvent;
 import com.owino.desktop.OSQANavigationEvents.ToggleShowVerificationButtonEvent;
 public class FeatureDetailedView extends VBox {
@@ -43,20 +46,24 @@ public class FeatureDetailedView extends VBox {
     private final OSQAFeature feature;
     private OSQATestSpec testSpec;
     private final OSQATestCase testCase;
-    public FeatureDetailedView(OSQAFeature feature){
+    public FeatureDetailedView(OSQAFeature feature, OSQAProduct product){
         this.feature = feature;
+        var topMenu = new BorderPane();
         var featureTitleLabel = new Label();
+        var backButton = new Button("Back");
         var featureDescriptionLabel = new Label();
         var featureUsageInstructions = new Label();
         featureTitleLabel.setText(this.feature.name());
         featureDescriptionLabel.setText(this.feature.description());
         featureDescriptionLabel.setWrapText(true);
         featureTitleLabel.setFont(Font.font(47));
-        featureTitleLabel.setFont(Font.font(15));
+        featureTitleLabel.setFont(Font.font(17));
+        topMenu.setRight(backButton);
+        topMenu.setLeft(featureTitleLabel);
         var testCases = this.feature.testCases();
         testCase = testCases.getFirst();
         Optional<OSQATestSpec> optionalTestSpect = switch (OSQAConfig.loadTestCaseSpec(testCase)){
-            case Result.Success<OSQATestSpec> (OSQATestSpec testSpec) -> Optional.of(testSpec);
+            case Result.Success<OSQATestSpec> (OSQATestSpec spec) -> Optional.of(spec);
             case Result.Failure<OSQATestSpec> failure -> {
                 IO.println("Failed to load test spec for test case " + testCase.title() + " " + failure.error().getLocalizedMessage());
                 yield Optional.empty();
@@ -85,10 +92,6 @@ public class FeatureDetailedView extends VBox {
                             switch (OSQAConfig.updateVerificationStatus(testSpec,testCase,updatedVerification)){
                                 case Result.Success<OSQATestSpec> (OSQATestSpec updatedTestSpec) -> {
                                     testSpec = updatedTestSpec;
-                                    var alert = new Alert(Alert.AlertType.INFORMATION);
-                                    alert.setTitle("Success!");
-                                    alert.setContentText("Verification Updated!");
-                                    alert.show();
                                     reloadVerifications();
                                 }
                                 case Result.Failure<OSQATestSpec> failure -> {
@@ -107,14 +110,16 @@ public class FeatureDetailedView extends VBox {
             });
             verificationsListView.setBorder(Border.EMPTY);
         }
-        getChildren().add(featureTitleLabel);
+        backButton.setOnAction(_ -> EventBus.getDefault().post(new OpenFeaturesListViewEvent(product)));
+        getChildren().add(topMenu);
         getChildren().add(featureDescriptionLabel);
         getChildren().add(featureUsageInstructions);
         if (verificationsListView != null)
             getChildren().add(verificationsListView);
-        VBox.setMargin(featureTitleLabel,MARGIN);
+        VBox.setMargin(topMenu,MARGIN);
         VBox.setMargin(featureUsageInstructions,MARGIN);
         VBox.setMargin(featureDescriptionLabel,MARGIN);
+        VBox.setVgrow(verificationsListView, Priority.ALWAYS);
         EventBus.getDefault().register(this);
         EventBus.getDefault().post(new ToggleShowVerificationButtonEvent(true));
         reloadVerifications();
@@ -132,14 +137,7 @@ public class FeatureDetailedView extends VBox {
                 var updatedTestSpec = new OSQATestSpec(testSpec.uuid(),testSpec.action(),verifications);
                 Result<Void> overwriteResult = OSQAConfig.overwriteSpecFile(updatedTestSpec,testCase);
                 switch (overwriteResult){
-                    case Result.Success<Void> _ -> {
-                        var alert = new Alert(Alert.AlertType.NONE);
-                        alert.setHeaderText("Verifications for this test have been updated successfully!");
-                        var dialogResult = alert.showAndWait();
-                        if (dialogResult.isPresent()){
-                            EventBus.getDefault().post(new OSQANavigationEvents.OpenFeatureDetailedViewEvent(feature));
-                        }
-                    }
+                    case Result.Success<Void> _ -> reloadVerifications();
                     case Result.Failure<Void> failure -> {
                         var alert = new Alert(Alert.AlertType.ERROR);
                         alert.setHeaderText("Failed to add this verification, an error occurred!");
