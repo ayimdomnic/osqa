@@ -17,6 +17,7 @@ package com.owino.desktop.features;
  */
 import java.util.*;
 import com.owino.core.Result;
+import com.owino.desktop.CSS;
 import javafx.scene.layout.*;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
@@ -49,15 +50,16 @@ public class FeatureDetailedView extends VBox {
         var topMenu = new BorderPane();
         var featureTitleLabel = new Label();
         var backButton = new Button("Back");
+        var featureDetailsSection = new VBox();
+        var verificationsSection = new VBox();
         var featureDescriptionLabel = new Label();
         var featureUsageInstructions = new Label();
         featureTitleLabel.setText(this.feature.name());
         featureDescriptionLabel.setText(this.feature.description());
         featureDescriptionLabel.setWrapText(true);
-        featureTitleLabel.setFont(Font.font(47));
-        featureTitleLabel.setFont(Font.font(17));
         topMenu.setRight(backButton);
         topMenu.setLeft(featureTitleLabel);
+        featureTitleLabel.setStyle(CSS.TITLE_LABEL);
         var testCases = this.feature.testCases();
         testCase = testCases.getFirst();
         Optional<OSQATestSpec> optionalTestSpect = switch (OSQAConfig.loadTestCaseSpec(testCase)){
@@ -123,13 +125,20 @@ public class FeatureDetailedView extends VBox {
         }
         backButton.setOnAction(_ -> EventBus.getDefault().post(new OpenFeaturesListViewEvent(product)));
         getChildren().add(topMenu);
-        getChildren().add(featureDescriptionLabel);
-        getChildren().add(featureUsageInstructions);
-        if (verificationsListView != null)
-            getChildren().add(verificationsListView);
+        featureDetailsSection.getChildren().add(featureDescriptionLabel);
+        featureDetailsSection.getChildren().add(featureUsageInstructions);
+        featureDetailsSection.setStyle(CSS.FORM_SECTION_BORDER);
+        getChildren().add(featureDetailsSection);
+        if (verificationsListView != null) {
+            verificationsSection.getChildren().add(verificationsListView);
+            verificationsSection.setStyle(CSS.FORM_SECTION_BORDER);
+            getChildren().add(verificationsSection);
+            VBox.setMargin(verificationsSection,MARGIN);
+        }
         VBox.setMargin(topMenu,MARGIN);
         VBox.setMargin(featureUsageInstructions,MARGIN);
         VBox.setMargin(featureDescriptionLabel,MARGIN);
+        VBox.setMargin(featureDetailsSection,MARGIN);
         VBox.setMargin(verificationsListView, new Insets(6,12,6,12));
         VBox.setVgrow(verificationsListView, Priority.ALWAYS);
         EventBus.getDefault().register(this);
