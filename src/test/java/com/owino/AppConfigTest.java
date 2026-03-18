@@ -18,18 +18,19 @@ package com.owino;
 import java.io.File;
 import java.util.UUID;
 import java.util.List;
+import java.nio.file.Path;
+import java.util.Optional;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
-import java.util.Optional;
 import com.owino.core.Result;
 import java.time.LocalDateTime;
 import com.owino.core.OSQAConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import com.owino.core.OSQAModel.OSQAProduct;
 import com.owino.core.OSQAModel.OSQAFeature;
 import com.owino.core.OSQAModel.OSQATestCase;
 import com.owino.core.OSQAModel.OSQATestSpec;
@@ -162,8 +163,17 @@ public class AppConfigTest {
     public void shouldWriteFeaturesConfFileTest() throws IOException {
         var uuid = "5833312b-7c84-4e6d-a067-622eb2156761";
         var testSpec = new OSQATestCase(uuid,"testcase","specfile.json");
-        var feature = new OSQAFeature(uuid,"5833312b-7c84-4e6d-a067-622eb2156761","Launch application","Feature notes","Critical",List.of(testSpec));
-        var result = OSQAConfig.writeFeature(Paths.get(OSQAConfig.MODULE_DIR),feature);
+        var prefix = "feature";
+        var appDataDir = Paths.get(OSQAConfig.MODULE_DIR);
+        var nameBuilder = new StringBuilder(appDataDir.toUri().getPath());
+        var featureTitle = "Feature notes";
+        nameBuilder.append(File.separator);
+        nameBuilder.append(prefix);
+        nameBuilder.append(featureTitle.replaceAll(" ",""));
+        nameBuilder.append(OSQAConfig.timestampedName(LocalDateTime.now(),"json"));
+        var fileName = nameBuilder.toString();
+        var feature = new OSQAFeature(uuid,"5833312b-7c84-4e6d-a067-622eb2156761","Launch application",featureTitle,"Critical",fileName,List.of(testSpec));
+        var result = OSQAConfig.writeFeature(feature);
         IO.println(result);
         assertThat(result instanceof Result.Success<Path>).isTrue();
         var path = ((Result.Success<Path>) result).value();
@@ -175,9 +185,17 @@ public class AppConfigTest {
     public void shouldFindAndListFeatureConfFilesTest() throws IOException {
         var uuid = "5833312b-7c84-4e6d-a067-622eb2156761";
         var featureTitle = "Launch application";
+        var appDataDir = Paths.get(OSQAConfig.MODULE_DIR);
         var testSpec = new OSQATestCase(uuid,"testcase","specfile.json");
-        var feature = new OSQAFeature(uuid,"5833312b-7c84-4e6d-a067-622eb2156761",featureTitle,"Feature notes","Critical",List.of(testSpec));
-        var result = OSQAConfig.writeFeature(Paths.get(OSQAConfig.MODULE_DIR),feature);
+        var nameBuilder = new StringBuilder(appDataDir.toUri().getPath());
+        var prefix = "feature";
+        nameBuilder.append(File.separator);
+        nameBuilder.append(prefix);
+        nameBuilder.append(featureTitle.replaceAll(" ",""));
+        nameBuilder.append(OSQAConfig.timestampedName(LocalDateTime.now(),"json"));
+        var fileName = nameBuilder.toString();
+        var feature = new OSQAFeature(uuid,"5833312b-7c84-4e6d-a067-622eb2156761",featureTitle,"Feature notes","Critical",fileName,List.of(testSpec));
+        var result = OSQAConfig.writeFeature(feature);
         IO.println(result);
         assertThat(result instanceof Result.Success<Path>).isTrue();
         var path = ((Result.Success<Path>) result).value();
@@ -323,10 +341,19 @@ public class AppConfigTest {
         var result = OSQAConfig.writeSpecFile(Paths.get(OSQAConfig.MODULE_DIR),specification,specFile);
         assertThat(result instanceof Result.Success<Void>).isTrue();
         var testCase = new OSQATestCase("b37c79fd-a803-4c83-953d-1240af36960a","Test Case",OSQAConfig.MODULE_DIR + File.separator + specFile);
+        var featureTitle = "Feature Name";
+        var appDataDir = Paths.get(OSQAConfig.MODULE_DIR);
+        var nameBuilder = new StringBuilder(appDataDir.toUri().getPath());
+        var prefix = "feature";
+        nameBuilder.append(File.separator);
+        nameBuilder.append(prefix);
+        nameBuilder.append(featureTitle.replaceAll(" ",""));
+        nameBuilder.append(OSQAConfig.timestampedName(LocalDateTime.now(),"json"));
+        var fileName = nameBuilder.toString();
         var feature = new OSQAFeature(
                 "9f8fcf88-fb9e-4b62-88f0-30a77b2883a3",
                 "e18b9af0-f984-4dd3-9174-782b2c70033a",
-                "Feature Name","Feature description","HIGH",
+                featureTitle,"Feature description","HIGH",fileName,
                 List.of(testCase));
         var actualCompletionCount = OSQAConfig.calculateFeatureVerificationProgress(feature);
         var expectedCompletion = 25;
@@ -352,9 +379,140 @@ public class AppConfigTest {
             IO.println("Active Profile:" + profile);
         }
     }
+    @Test
+    public void shouldDeleteFeatureTest(){
+        var specFile = OSQAConfig.timestampedName(LocalDateTime.now(),"json");
+        var appDir = Paths.get(OSQAConfig.MODULE_DIR);
+        var filePath = appDir.toAbsolutePath().toString().concat(File.separator).concat(specFile);
+        var testCase = new OSQATestCase("73bbcc66-78aa-45ed-956b-f605296a458b","Test Case",filePath);
+        var featureTitle = "Feature Name";
+        var featureNameBuilder = new StringBuilder(appDir.toUri().getPath());
+        var prefix = "feature";
+        featureNameBuilder.append(prefix);
+        featureNameBuilder.append(featureTitle.replaceAll(" ",""));
+        featureNameBuilder.append(OSQAConfig.timestampedName(LocalDateTime.now(),"json"));
+        var fileName = featureNameBuilder.toString();
+        var feature = new OSQAFeature(
+                "91df8a35-6224-4dbc-8c84-a87bb49ac05d",
+                "3f16844a-285f-4fc2-894b-65d96fd3a212",
+                "Feature Name",
+                "Feature description",
+                "CRITICAL",fileName,List.of(testCase));
+
+        var feature2NameBuilder = new StringBuilder(appDir.toUri().getPath());
+        feature2NameBuilder.append(File.separator);
+        feature2NameBuilder.append(prefix);
+        feature2NameBuilder.append(featureTitle.replaceAll(" ",""));
+        feature2NameBuilder.append(OSQAConfig.timestampedName(LocalDateTime.now(),"json"));
+        var file2Name = feature2NameBuilder.toString();
+        var feature2 = new OSQAFeature(
+                "91df8a35-6224-4dbc-8c84-a87bb49ac05d",
+                "3f16844a-285f-4fc2-894b-65d96fd3a212",
+                "Second Feature Name",
+                "Feature description",
+                "CRITICAL",file2Name,List.of(testCase));
+        var writeResult = OSQAConfig.writeFeature(feature);
+        var feature2WriteResult = OSQAConfig.writeFeature(feature2);
+        assertThat(writeResult).isInstanceOf(Result.Success.class);
+        assertThat(feature2WriteResult).isInstanceOf(Result.Success.class);
+        var deleteResult = OSQAConfig.deleteFeature(feature);
+        assertThat(deleteResult).isInstanceOf(Result.Success.class);
+        var listFeaturesResult = OSQAConfig.listFeatures(appDir);
+        assertThat(listFeaturesResult).isInstanceOf(Result.Success.class);
+        if (listFeaturesResult instanceof Result.Success<List<OSQAFeature>>(List<OSQAFeature> features)){
+            assertThat(features).isNotEmpty();
+        }
+    }
+    @Test
+    public void shouldMigrateLegacyFeaturesTest(){
+        var appDir = Paths.get(OSQAConfig.MODULE_DIR);
+        var product = new OSQAProduct("08363eb4-4b7d-4c70-8853-f129dcd78835","Test Product","Android",appDir);
+        var result = OSQAConfig.migrateLegacyFeatures(product);
+        assertThat(result).isInstanceOf(Result.Success.class);
+    }
+    @Test
+    public void shouldDeleteVerificationTest(){
+        var verification1 = new OSQAVerification("bcdf11b5-9a5e-4702-b19d-82bbb2f9a0d0",1,"On Device B, the task is marked complete and a new instance appears with the correct future date.");
+        var verification2 = new OSQAVerification("a76b4d46-e7df-43ea-afec-221b899ae527",2,"On Device A, after a sync/refresh, the original task is marked complete and the new instance appears with the correct future date.");
+        var expectedTestSpec = new OSQATestSpec(
+                "a06e2598-bed3-4393-b6a2-9645b6bfa294",
+                "On Device B, mark the 'Team Sync' task as complete.",
+                List.of(verification1,verification2));
+        var testCase = new OSQATestCase(
+                "47196d64-56f8-4ad3-b96e-24acbc907af7",
+                "Task Completion Sync",
+                TEST_CASE_SPEC_FILE);
+        Result<OSQATestSpec> result = OSQAConfig.loadTestCaseSpec(testCase);
+        IO.println(result);
+        assertThat(result instanceof Result.Success<OSQATestSpec>).isTrue();
+        OSQATestSpec actualTestSpec = ((Result.Success<OSQATestSpec>) result).value();
+        assertThat(actualTestSpec).isNotNull();
+        assertThat(actualTestSpec.action()).isEqualTo(expectedTestSpec.action());
+        assertThat(actualTestSpec.verifications()).isNotEmpty();
+        assertThat(actualTestSpec.verifications().size()).isEqualTo(expectedTestSpec.verifications().size());
+        assertThat(actualTestSpec.verifications().getFirst().order()).isEqualTo(1);
+        assertThat(actualTestSpec.verifications().getFirst().description()).isEqualTo("On Device B, the task is marked complete and a new instance appears with the correct future date.");
+        assertThat(actualTestSpec.verifications().getLast().order()).isEqualTo(2);
+        assertThat(actualTestSpec.verifications().getLast().description()).isEqualTo("On Device A, after a sync/refresh, the original task is marked complete and the new instance appears with the correct future date.");
+        var verificationDeleteResult = OSQAConfig.deleteVerification(actualTestSpec,testCase,verification1);
+        assertThat(verificationDeleteResult).isInstanceOf(Result.Success.class);
+        Result<OSQATestSpec> secondLoadResult = OSQAConfig.loadTestCaseSpec(testCase);
+        assertThat(secondLoadResult instanceof Result.Success<OSQATestSpec>).isTrue();
+        actualTestSpec = ((Result.Success<OSQATestSpec>) secondLoadResult).value();
+        assertThat(actualTestSpec).isNotNull();
+        assertThat(actualTestSpec.action()).isEqualTo(expectedTestSpec.action());
+        assertThat(actualTestSpec.verifications()).isNotEmpty();
+        assertThat(actualTestSpec.verifications().size()).isEqualTo(1);
+        assertThat(actualTestSpec.verifications().getFirst()).isNotNull();
+        assertThat(actualTestSpec.verifications().getFirst().description()).isEqualTo(verification2.description());
+        assertThat(actualTestSpec.verifications().getFirst().verificationStatus()).isEqualTo(verification2.verificationStatus());
+        assertThat(actualTestSpec.verifications().getFirst().uuid()).isEqualTo(verification2.uuid());
+    }
+    @Test
+    public void shouldOverwriteFeatureTest(){
+        var uuid = "5833312b-7c84-4e6d-a067-622eb2156761";
+        var prefix = "feature";
+        var appDataDir = Paths.get(OSQAConfig.MODULE_DIR);
+        var nameBuilder = new StringBuilder(appDataDir.toUri().getPath());
+        var featureTitle = "Feature notes";
+        nameBuilder.append(File.separator);
+        nameBuilder.append(prefix);
+        nameBuilder.append(featureTitle.replaceAll(" ",""));
+        nameBuilder.append(OSQAConfig.timestampedName(LocalDateTime.now(),"json"));
+        var fileName = nameBuilder.toString();
+        var specFilepath = appDataDir.toUri().getPath() + File.separator + "specfile.json";
+        var testcase = new OSQATestCase(uuid,"testcase",specFilepath);
+        var feature = new OSQAFeature(uuid,"5833312b-7c84-4e6d-a067-622eb2156761","Launch application",featureTitle,"Critical",fileName,List.of(testcase));
+        var result = OSQAConfig.writeFeature(feature);
+        IO.println(result);
+        assertThat(result instanceof Result.Success<Path>).isTrue();
+        var path = ((Result.Success<Path>) result).value();
+        assertThat(Files.exists(path)).isTrue();
+        IO.println(path.getFileName());
+
+        var updatedFeature = new OSQAFeature(uuid,feature.productUuid(),"Launch App v2","Launcher v2 detailed","Low",fileName,List.of(testcase));
+        var verification = new OSQAVerification("6821bca7-50db-4116-aa39-d17760346694",0,"Sample feature verification entry");
+        var testSpec = new OSQATestSpec("b08d4f4a-9d7e-4c60-a596-2f37b54eba1a","User action description",List.of(verification));
+        var overwriteFeatureResult = OSQAConfig.overwriteFeature(updatedFeature,testSpec,testcase);
+        assertThat(overwriteFeatureResult).isInstanceOf(Result.Success.class);
+        var loadFeatureResult = OSQAConfig.loadFeature(fileName);
+        assertThat(loadFeatureResult).isInstanceOf(Result.Success.class);
+        if (loadFeatureResult instanceof Result.Success<OSQAFeature>(OSQAFeature loadedFeature)){
+            assertThat(loadedFeature).isNotNull();
+            assertThat(loadedFeature.name()).isEqualTo(updatedFeature.name());
+            assertThat(loadedFeature.description()).isEqualTo(updatedFeature.description());
+            assertThat(loadedFeature.priority()).isEqualTo(updatedFeature.priority());
+            assertThat(loadedFeature.testCases().size()).isEqualTo(updatedFeature.testCases().size());
+        }
+        var loadTestSpecResult = OSQAConfig.loadTestCaseSpec(updatedFeature.testCases().getFirst());
+        assertThat(loadTestSpecResult).isInstanceOf(Result.Success.class);
+        if (loadTestSpecResult instanceof Result.Success<OSQATestSpec>(OSQATestSpec loadedTestSpec)){
+            assertThat(loadedTestSpec).isNotNull();
+        }
+    }
     @AfterEach
     public void tearDown() throws IOException {
-        deleteAppDataFolder();
+       deleteAppDataFolder();
     }
     private static void deleteAppDataFolder() throws IOException {
         var directory = Paths.get("data");
@@ -378,6 +536,7 @@ public class AppConfigTest {
                 "name": "Core Calendar and Navigation",
                 "description": "Validates basic calendar rendering, navigation controls, and fundamental UI elements.",
                 "priority": "Critical",
+                "filePath": "testFile",
                 "testCases": [
                   {
                     "uuid": "0b8c4bf2-4590-4b01-bda2-cf7271a76789",
@@ -394,6 +553,7 @@ public class AppConfigTest {
                 "name": "",
                 "description": "",
                 "priority": "",
+                "filePath": "",
                 "testCases": [
                   {
                     "uuid": "uuid",
@@ -409,7 +569,7 @@ public class AppConfigTest {
                 "action": "On Device B, mark the 'Team Sync' task as complete.",
                 "verifications": [
                   {
-                    "uuid": "a76b4d46-e7df-43ea-afec-221b899ae527",
+                    "uuid": "bcdf11b5-9a5e-4702-b19d-82bbb2f9a0d0",
                     "order": 1,
                     "description": "On Device B, the task is marked complete and a new instance appears with the correct future date.",
                     "verificationStatus": false

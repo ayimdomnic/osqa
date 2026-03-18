@@ -22,7 +22,7 @@ See <https://www.gnu.org/licenses/> for more details.
   <groupId>com.owino</groupId>
   <artifactId>osqa</artifactId>
   <packaging>jar</packaging>
-  <version>1.0</version>
+  <version>1.3</version>
   <name>osqa</name>
   <url>https://www.thelifeplanner.co</url>
   <properties>
@@ -98,6 +98,18 @@ See <https://www.gnu.org/licenses/> for more details.
       <groupId>io.github.mkpaz</groupId>
       <artifactId>atlantafx-base</artifactId>
       <version>2.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.testfx</groupId>
+      <artifactId>testfx-core</artifactId>
+      <version>4.0.18</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testfx</groupId>
+      <artifactId>testfx-junit5</artifactId>
+      <version>4.0.18</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
   <build>

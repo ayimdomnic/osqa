@@ -16,8 +16,8 @@ package com.owino.desktop.products;
  * along with OSQA.  If not, see <https://www.gnu.org/licenses/>.
  */
 import java.io.File;
-import java.nio.file.Path;
 import java.util.List;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.nio.file.Paths;
 import java.sql.Connection;
@@ -35,7 +35,6 @@ public class OSQAProductDao {
             }
             if (binDirResult instanceof Result.Success<Path>(Path binDirPath)){
                 var sqliteUrl = "jdbc:sqlite:" + binDirPath.toAbsolutePath() + File.separator + OSQAConfig.OSQA_DB;
-                IO.println(sqliteUrl);
                 var connection = DriverManager.getConnection(sqliteUrl);
                 return Result.success(connection);
             }
@@ -48,14 +47,6 @@ public class OSQAProductDao {
     }
     public static Result<Void> saveProduct(OSQAProduct product){
         try {
-            var schemaSql = """
-                CREATE TABLE IF NOT EXISTS Products (
-                    uuid TEXT PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    target TEXT NOT NULL,
-                    projectDir TEXT NOT NULL
-                );
-                """;
             var insertSql = """
                 INSERT INTO Products VALUES(?,?,?,?);
                 """;
@@ -63,8 +54,6 @@ public class OSQAProductDao {
             if (!(resultConn instanceof Result.Success<Connection> (Connection connection))){
                 return Result.failure("Failed to open database connection");
             }
-            var schemaStatement = connection.createStatement();
-            schemaStatement.execute(schemaSql);
             var insertStatement = connection.prepareStatement(insertSql);
             insertStatement.setString(1,product.uuid());
             insertStatement.setString(2,product.name());
@@ -74,6 +63,27 @@ public class OSQAProductDao {
             return Result.success(null);
         } catch (SQLException error){
             return Result.failure("Failed to save product: " + error.getLocalizedMessage());
+        }
+    }
+    public static Result<Void> updateProduct(OSQAProduct product){
+        try {
+            var updateSql = """
+                UPDATE Products
+                SET name = ?, target = ?, projectDir = ?
+                WHERE
+                uuid = ?
+                """;
+            if (!(connection() instanceof Result.Success<Connection>(Connection connection))){
+                return Result.failure("Failed to open database connection");
+            }
+            var updateStatement = connection.prepareStatement(updateSql);
+            updateStatement.setString(1,product.name());
+            updateStatement.setString(2,product.target());
+            updateStatement.setString(3,product.projectDir().toAbsolutePath().toString());
+            updateStatement.setString(4,product.uuid());
+            return updateStatement.executeUpdate() == 1 ? Result.success(null) : Result.failure("Failed to update product, database mismatch");
+        } catch (SQLException failure){
+            return Result.failure(failure.getLocalizedMessage());
         }
     }
     public static Result<List<OSQAProduct>> listProducts(){
@@ -97,6 +107,70 @@ public class OSQAProductDao {
             return Result.success(products);
         } catch (SQLException failure){
             return Result.failure("Failed to load products list: " + failure.getLocalizedMessage());
+        }
+    }
+    public static Result<Void> initSchema(){
+        try {
+            var schemaSql = """
+                CREATE TABLE IF NOT EXISTS Products (
+                    uuid TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    target TEXT NOT NULL,
+                    projectDir TEXT NOT NULL
+                );
+                """;
+            var resultConn = connection();
+            if (!(resultConn instanceof Result.Success<Connection> (Connection connection))){
+                return Result.failure("Failed to open database connection");
+            }
+            var schemaStatement = connection.createStatement();
+            schemaStatement.execute(schemaSql);
+            return Result.success(null);
+        } catch (SQLException error){
+            return Result.failure(error.getLocalizedMessage());
+        }
+    }
+
+    public static Result<Void> delete(OSQAProduct product) {
+        try {
+            var deleteSql = """
+                DELETE FROM Products
+                WHERE uuid = ?
+                """;
+            var result = connection();
+            if (!(result instanceof Result.Success<Connection> (Connection connection))){
+                return Result.failure("Failed to open database connection");
+            }
+            var statement = connection.prepareStatement(deleteSql);
+            statement.setString(1,product.uuid());
+            statement.executeUpdate();
+            return Result.success(null);
+        } catch (SQLException error){
+            return Result.failure(error.getLocalizedMessage());
+        }
+    }
+    public static Result<OSQAProduct> findProductByUuid(String productUuid) {
+        try {
+            var findSql = """
+                SELECT * FROM Products
+                WHERE uuid = ?
+                """;
+            if (!(connection() instanceof Result.Success<Connection>(Connection connection))){
+                return Result.failure("Failed to open database connection");
+            }
+            var statement = connection.prepareStatement(findSql);
+            statement.setString(1,productUuid);
+            var result = statement.executeQuery();
+            if (result.next()){
+                var uuid = result.getString(1);
+                var name = result.getString(2);
+                var target = result.getString(3);
+                var projectDir = Paths.get(result.getString(4));
+                var product = new OSQAProduct(uuid,name,target,projectDir);
+                return Result.success(product);
+            } else return Result.failure("Failed to load products");
+        } catch (SQLException failure){
+            return Result.failure("Failed to load products");
         }
     }
 }

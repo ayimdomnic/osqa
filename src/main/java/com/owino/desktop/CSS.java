@@ -22,4 +22,11 @@ public class CSS {
             -fx-border-radius: 5;
             -fx-padding: 10;
             """;
+    public static String TITLE_LABEL = """
+            -fx-font-size: 32px;
+            -fx-font-weight: bold;
+            -fx-font-family: 'System Bold';
+            -fx-text-fill: #2c3e50;
+            -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 10, 0, 0, 2);
+            """;
 }

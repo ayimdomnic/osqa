@@ -23,12 +23,17 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import com.owino.core.Result;
 import com.owino.core.OSQAConfig;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
 import com.owino.core.OSQAModel.OSQAProduct;
 import com.owino.desktop.products.OSQAProductDao;
 import static org.assertj.core.api.Assertions.assertThat;
 public class OSQAProductDaoTest {
+    @BeforeEach
+    public void setUp(){
+        OSQAProductDao.initSchema();
+    }
     @Test
     public void shouldGetDatabaseConnectionTest(){
         var result = OSQAProductDao.connection();
@@ -76,6 +81,76 @@ public class OSQAProductDaoTest {
         assertThat(products.getFirst().target()).isEqualTo(product.target());
         assertThat(products.getFirst().projectDir().toAbsolutePath().toString())
                 .isEqualTo(product.projectDir().toAbsolutePath().toString());
+    }
+    @Test
+    public void shouldInitSchemaTest(){
+        var result = OSQAProductDao.initSchema();
+        assertThat(result).isInstanceOf(Result.Success.class);
+    }
+    @Test
+    public void shouldDeleteProductTest() throws IOException {
+        var projectDir = Paths.get(OSQAConfig.MODULE_DIR);
+        if (!Files.exists(projectDir))
+            Files.createDirectory(projectDir);
+        var product = new OSQAProduct(
+                "a76b4d46-e7df-43ea-afec-221b899ae527",
+                "OSQA Desktop",
+                "OSX",
+                projectDir);
+        var saveResult = OSQAProductDao.saveProduct(product);
+        assertThat(saveResult).isInstanceOf(Result.Success.class);
+        var deleteResult = OSQAProductDao.delete(product);
+        assertThat(deleteResult).isInstanceOf(Result.Success.class);
+    }
+    @Test
+    public void shouldUpdateProductTest() throws IOException {
+        var projectDir = Paths.get(OSQAConfig.MODULE_DIR);
+        if (!Files.exists(projectDir))
+            Files.createDirectory(projectDir);
+        var product = new OSQAProduct(
+                "a76b4d46-e7df-43ea-afec-221b899ae527",
+                "OSQA Desktop",
+                "OSX",
+                projectDir);
+        var result = OSQAProductDao.saveProduct(product);
+        assertThat(result).isInstanceOf(Result.Success.class);
+        var updatedProduct = new OSQAProduct(
+                "a76b4d46-e7df-43ea-afec-221b899ae527",
+                "OSQA Desktop V2",
+                "Windows x86_64",
+                projectDir);
+        var updateResult = OSQAProductDao.updateProduct(updatedProduct);
+        assertThat(updateResult).isInstanceOf(Result.Success.class);
+        var listProductsResult = OSQAProductDao.listProducts();
+        assertThat(listProductsResult).isInstanceOf(Result.Success.class);
+        if (listProductsResult instanceof Result.Success<List<OSQAProduct>>(List<OSQAProduct> updatedProducts)){
+            var updated = updatedProducts.getFirst();
+            assertThat(updated).isNotNull();
+            assertThat(updated.uuid()).isEqualTo(updatedProduct.uuid());
+            assertThat(updated.name()).isEqualTo(updatedProduct.name());
+            assertThat(updated.target()).isEqualTo(updatedProduct.target());
+        }
+    }
+    @Test
+    public void shouldFindProductByUuidTest() throws IOException {
+        var projectDir = Paths.get(OSQAConfig.MODULE_DIR);
+        if (!Files.exists(projectDir))
+            Files.createDirectory(projectDir);
+        var product = new OSQAProduct(
+                "a76b4d46-e7df-43ea-afec-221b899ae527",
+                "OSQA Desktop",
+                "OSX",
+                projectDir);
+        var result = OSQAProductDao.saveProduct(product);
+        assertThat(result).isInstanceOf(Result.Success.class);
+        var findResult = OSQAProductDao.findProductByUuid(product.uuid());
+        assertThat(findResult).isInstanceOf(Result.Success.class);
+        if (findResult instanceof Result.Success<OSQAProduct>(OSQAProduct matchingProduct)){
+            assertThat(matchingProduct).isNotNull();
+            assertThat(matchingProduct.uuid()).isEqualTo(product.uuid());
+            assertThat(matchingProduct.name()).isEqualTo(product.name());
+            assertThat(matchingProduct.target()).isEqualTo(product.target());
+        }
     }
     @AfterEach
     public void tearDown() throws IOException {

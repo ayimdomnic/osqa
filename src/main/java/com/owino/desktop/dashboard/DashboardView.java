@@ -58,14 +58,14 @@ public class DashboardView extends SplitPane {
     public void openFeatureFormEvent(OpenFeatureFormEvent event){
         Platform.runLater(() -> {
             getItems().removeLast();
-            getItems().add(new FeatureFormView());
+            getItems().add(new FeatureFormView(event.feature(),event.isEditMode()));
             setDividerPositions(0.05f);
         });
     }
     @Subscribe
     public void openFeatureDetailedViewEvent(OpenFeatureDetailedViewEvent event){
         getItems().removeLast();
-        getItems().add(new FeatureDetailedView(event.selectedFeature()));
+        getItems().add(new FeatureDetailedView(event.selectedFeature(),event.product()));
         setDividerPositions(0.05f);
     }
     @Subscribe
@@ -77,7 +77,7 @@ public class DashboardView extends SplitPane {
     @Subscribe
     public void openProductFormEvent(OpenProductFormEvent event){
         getItems().removeLast();
-        getItems().add(new ProductFormView(stage));
+        getItems().add(new ProductFormView(stage,event.product(),event.isEditMode()));
         setDividerPositions(0.05f);
     }
     @Subscribe

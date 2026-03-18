@@ -17,23 +17,25 @@ package com.owino.desktop.features;
  */
 import java.util.*;
 import com.owino.core.Result;
+import com.owino.desktop.CSS;
+import javafx.scene.layout.*;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.text.Font;
-import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import com.owino.core.OSQAConfig;
-import javafx.scene.layout.Border;
 import javafx.application.Platform;
-import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.EventBus;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import org.greenrobot.eventbus.Subscribe;
+import com.owino.core.OSQAModel.OSQAProduct;
 import com.owino.core.OSQAModel.OSQAFeature;
 import com.owino.core.OSQAModel.OSQATestSpec;
 import com.owino.core.OSQAModel.OSQATestCase;
-import com.owino.desktop.OSQANavigationEvents;
 import com.owino.core.OSQAModel.OSQAVerification;
 import com.owino.desktop.OSQANavigationEvents.ResetVerificationsEvent;
+import com.owino.desktop.OSQANavigationEvents.OpenFeaturesListViewEvent;
 import com.owino.desktop.OSQANavigationEvents.ShowVerificationFormEvent;
 import com.owino.desktop.OSQANavigationEvents.ToggleShowVerificationButtonEvent;
 public class FeatureDetailedView extends VBox {
@@ -43,20 +45,25 @@ public class FeatureDetailedView extends VBox {
     private final OSQAFeature feature;
     private OSQATestSpec testSpec;
     private final OSQATestCase testCase;
-    public FeatureDetailedView(OSQAFeature feature){
+    public FeatureDetailedView(OSQAFeature feature, OSQAProduct product){
         this.feature = feature;
+        var topMenu = new BorderPane();
         var featureTitleLabel = new Label();
+        var backButton = new Button("Back");
+        var featureDetailsSection = new VBox();
+        var verificationsSection = new VBox();
         var featureDescriptionLabel = new Label();
         var featureUsageInstructions = new Label();
         featureTitleLabel.setText(this.feature.name());
         featureDescriptionLabel.setText(this.feature.description());
         featureDescriptionLabel.setWrapText(true);
-        featureTitleLabel.setFont(Font.font(47));
-        featureTitleLabel.setFont(Font.font(15));
+        topMenu.setRight(backButton);
+        topMenu.setLeft(featureTitleLabel);
+        featureTitleLabel.setStyle(CSS.TITLE_LABEL);
         var testCases = this.feature.testCases();
         testCase = testCases.getFirst();
         Optional<OSQATestSpec> optionalTestSpect = switch (OSQAConfig.loadTestCaseSpec(testCase)){
-            case Result.Success<OSQATestSpec> (OSQATestSpec testSpec) -> Optional.of(testSpec);
+            case Result.Success<OSQATestSpec> (OSQATestSpec spec) -> Optional.of(spec);
             case Result.Failure<OSQATestSpec> failure -> {
                 IO.println("Failed to load test spec for test case " + testCase.title() + " " + failure.error().getLocalizedMessage());
                 yield Optional.empty();
@@ -74,21 +81,23 @@ public class FeatureDetailedView extends VBox {
                         setText("");
                         setGraphic(null);
                     } else {
+                        var buttonsContainer = new HBox(12);
                         var container = new VBox();
+                        var contentContainer = new BorderPane();
                         var verificationCheckbox = new CheckBox(verification.description());
+                        var deleteButton = new Button("Delete");
+                        var editButton = new Button("Edit");
+                        deleteButton.setTextFill(Color.RED);
+                        deleteButton.setFont(Font.font(12));
+                        editButton.setFont(Font.font(12));
+                        buttonsContainer.getChildren().addAll(deleteButton,editButton);
                         verificationCheckbox.setSelected(verification.verificationStatus());
                         verificationCheckbox.setWrapText(true);
-                        container.getChildren().add(verificationCheckbox);
-                        VBox.setMargin(verificationCheckbox,MARGIN);
                         verificationCheckbox.selectedProperty().addListener((observableValue,_,newVerifiedStatus) -> {
                             var updatedVerification = new OSQAVerification(verification.uuid(),verification.order(),verification.description(),newVerifiedStatus);
                             switch (OSQAConfig.updateVerificationStatus(testSpec,testCase,updatedVerification)){
                                 case Result.Success<OSQATestSpec> (OSQATestSpec updatedTestSpec) -> {
                                     testSpec = updatedTestSpec;
-                                    var alert = new Alert(Alert.AlertType.INFORMATION);
-                                    alert.setTitle("Success!");
-                                    alert.setContentText("Verification Updated!");
-                                    alert.show();
                                     reloadVerifications();
                                 }
                                 case Result.Failure<OSQATestSpec> failure -> {
@@ -101,50 +110,93 @@ public class FeatureDetailedView extends VBox {
                                 }
                             }
                         });
+                        deleteButton.setOnAction(_ -> deleteVerification(verification));
+                        editButton.setOnAction(_ -> EventBus.getDefault().post(new ShowVerificationFormEvent(verification,true)));
+                        contentContainer.setLeft(verificationCheckbox);
+                        contentContainer.setRight(buttonsContainer);
+                        container.getChildren().add(contentContainer);
+                        container.getChildren().add(new Separator());
+                        VBox.setMargin(contentContainer,new Insets(0,22,0,8));
                         setGraphic(container);
                     }
                 }
             });
             verificationsListView.setBorder(Border.EMPTY);
         }
-        getChildren().add(featureTitleLabel);
-        getChildren().add(featureDescriptionLabel);
-        getChildren().add(featureUsageInstructions);
-        if (verificationsListView != null)
-            getChildren().add(verificationsListView);
-        VBox.setMargin(featureTitleLabel,MARGIN);
+        backButton.setOnAction(_ -> EventBus.getDefault().post(new OpenFeaturesListViewEvent(product)));
+        getChildren().add(topMenu);
+        featureDetailsSection.getChildren().add(featureDescriptionLabel);
+        featureDetailsSection.getChildren().add(featureUsageInstructions);
+        featureDetailsSection.setStyle(CSS.FORM_SECTION_BORDER);
+        getChildren().add(featureDetailsSection);
+        if (verificationsListView != null) {
+            verificationsSection.getChildren().add(verificationsListView);
+            verificationsSection.setStyle(CSS.FORM_SECTION_BORDER);
+            getChildren().add(verificationsSection);
+            VBox.setMargin(verificationsSection,MARGIN);
+        }
+        VBox.setMargin(topMenu,MARGIN);
         VBox.setMargin(featureUsageInstructions,MARGIN);
         VBox.setMargin(featureDescriptionLabel,MARGIN);
+        VBox.setMargin(featureDetailsSection,MARGIN);
+        VBox.setMargin(verificationsListView, new Insets(6,12,6,12));
+        VBox.setVgrow(verificationsListView, Priority.ALWAYS);
         EventBus.getDefault().register(this);
         EventBus.getDefault().post(new ToggleShowVerificationButtonEvent(true));
         reloadVerifications();
     }
+    private void deleteVerification(OSQAVerification verification) {
+        var confirmationAlert = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmationAlert.setContentText("Are you sure you want to delete this verification?");
+        Optional<ButtonType> response = confirmationAlert.showAndWait();
+        response.ifPresent(buttonType -> {
+            if (buttonType == ButtonType.OK){
+                Result<Void> deleteResult = OSQAConfig.deleteVerification(testSpec,testCase,verification);
+                if (deleteResult instanceof Result.Success<Void>)
+                    reloadVerifications();
+            }
+        });
+    }
     @Subscribe
     public void showNewVerificationFormEvent(ShowVerificationFormEvent event){
-        var dialog = new FeatureVerificationForm();
+        var dialog = new FeatureVerificationForm(event.verification(),event.isEditMode());
         Optional<String> inputResult = dialog.showAndWait();
         if (inputResult.isPresent()){
             var verificationDesc = inputResult.get();
-            var newVerification = new OSQAVerification(UUID.randomUUID().toString(),0,verificationDesc,false);
-            if (testSpec != null){
-                var verifications = testSpec.verifications();
-                verifications.add(newVerification);
-                var updatedTestSpec = new OSQATestSpec(testSpec.uuid(),testSpec.action(),verifications);
-                Result<Void> overwriteResult = OSQAConfig.overwriteSpecFile(updatedTestSpec,testCase);
-                switch (overwriteResult){
-                    case Result.Success<Void> _ -> {
-                        var alert = new Alert(Alert.AlertType.NONE);
-                        alert.setHeaderText("Verifications for this test have been updated successfully!");
-                        var dialogResult = alert.showAndWait();
-                        if (dialogResult.isPresent()){
-                            EventBus.getDefault().post(new OSQANavigationEvents.OpenFeatureDetailedViewEvent(feature));
+            if (event.isEditMode()){
+                var existingVerification = event.verification();
+                var updatedVerification = new OSQAVerification(existingVerification.uuid(),existingVerification.order(),inputResult.get(),existingVerification.verificationStatus());
+                if (testSpec != null){
+                    var verifications = testSpec.verifications();
+                    verifications.removeIf(e -> e.uuid().equalsIgnoreCase(existingVerification.uuid()));
+                    verifications.add(updatedVerification);
+                    var updatedTestSpec = new OSQATestSpec(testSpec.uuid(),testSpec.action(),verifications);
+                    Result<Void> overwriteResult = OSQAConfig.overwriteSpecFile(updatedTestSpec,testCase);
+                    switch (overwriteResult){
+                        case Result.Success<Void> _ -> reloadVerifications();
+                        case Result.Failure<Void> failure -> {
+                            var alert = new Alert(Alert.AlertType.ERROR);
+                            alert.setHeaderText("Failed to add this verification, an error occurred!");
+                            alert.setContentText("Cause: " + failure.error().getLocalizedMessage());
+                            alert.show();
                         }
                     }
-                    case Result.Failure<Void> failure -> {
-                        var alert = new Alert(Alert.AlertType.ERROR);
-                        alert.setHeaderText("Failed to add this verification, an error occurred!");
-                        alert.setContentText("Cause: " + failure.error().getLocalizedMessage());
-                        alert.show();
+                }
+            } else {
+                var verification = new OSQAVerification(UUID.randomUUID().toString(),0,verificationDesc,false);
+                if (testSpec != null){
+                    var verifications = testSpec.verifications();
+                    verifications.add(verification);
+                    var updatedTestSpec = new OSQATestSpec(testSpec.uuid(),testSpec.action(),verifications);
+                    Result<Void> overwriteResult = OSQAConfig.overwriteSpecFile(updatedTestSpec,testCase);
+                    switch (overwriteResult){
+                        case Result.Success<Void> _ -> reloadVerifications();
+                        case Result.Failure<Void> failure -> {
+                            var alert = new Alert(Alert.AlertType.ERROR);
+                            alert.setHeaderText("Failed to add this verification, an error occurred!");
+                            alert.setContentText("Cause: " + failure.error().getLocalizedMessage());
+                            alert.show();
+                        }
                     }
                 }
             }

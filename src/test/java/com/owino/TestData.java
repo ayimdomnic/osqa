@@ -15,8 +15,8 @@ package com.owino;
  * You should have received a copy of the GNU General Public License
  * along with OSQA.  If not, see <https://www.gnu.org/licenses/>.
  */
-import com.owino.core.OSQAModel;
 import java.util.List;
+import com.owino.core.OSQAModel;
 public class TestData {
     public static final List<OSQAModel.OSQAFeature> featureOptions = List.of(
             new OSQAModel.OSQAFeature(
@@ -24,7 +24,7 @@ public class TestData {
                     "7a5b7ad9-c994-4a72-a17a-612c2d9a6029",
                     "Core Calendar and Navigation",
                     "Validates basic calendar rendering, navigation controls, and fundamental UI elements.",
-                    "Critical",
+                    "Critical","featureFile",
                     List.of(
                             new OSQAModel.OSQATestCase(
                                     "0b8c4bf2-4590-4b01-bda2-cf7271a76789",
@@ -45,7 +45,7 @@ public class TestData {
                     "7a5b7ad9-c994-4a72-a17a-612c2d9a6029",
                     "User Authentication",
                     "Validates login, logout, and session security workflows.",
-                    "High",
+                    "High","featureFile",
                     List.of(
                             new OSQAModel.OSQATestCase(
                                     "4c1d2e3f-3333-4f44-bda2-cf7271a7cccc",
@@ -66,7 +66,7 @@ public class TestData {
                     "7a5b7ad9-c994-4a72-a17a-612c2d9a6029",
                     "Reporting Engine",
                     "Validates data aggregation, chart rendering, and export functionality.",
-                    "Medium",
+                    "Medium","featureFile",
                     List.of(
                             new OSQAModel.OSQATestCase(
                                     "7f4a5b6c-6666-4f77-bda2-cf7271a7ffff",
@@ -90,7 +90,7 @@ public class TestData {
                     "7a5b7ad9-c994-4a72-a17a-612c2d9a6029",
             "User Authentication",
             "Validates login, logout, and session security workflows.",
-            "High",
+            "High","featureFile",
             List.of(
                 new OSQAModel.OSQATestCase(
                 "4c1d2e3f-3333-4f44-bda2-cf7271a7cccc",

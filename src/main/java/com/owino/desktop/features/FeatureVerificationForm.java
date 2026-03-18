@@ -17,14 +17,15 @@ package com.owino.desktop.features;
  */
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
-import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
+import javafx.scene.layout.VBox;
+import com.owino.core.OSQAModel.OSQAVerification;
 public class FeatureVerificationForm extends Dialog<String> {
-    public FeatureVerificationForm(){
+    public FeatureVerificationForm(OSQAVerification verification, boolean isEditMode){
         var container = new VBox();
-        setTitle("Feature Verification");
-        var title = new Label("New Feature Verification.");
-        var description = new Label("Add single-step criteria to validate this feature during QA");
+        setTitle(isEditMode ? "Update Verification" : "Feature Verification");
+        var title = new Label(isEditMode ? "Update Fature Verification" : "New Feature Verification.");
+        var description = new Label(isEditMode? "Update this feature verification criteria" : "Add single-step criteria to validate this feature during QA");
         title.setFont(Font.font(21));
         description.setFont(Font.font(15));
         var verificationDescTextArea = new TextArea();
@@ -35,6 +36,7 @@ public class FeatureVerificationForm extends Dialog<String> {
         verificationDescTextArea.setWrapText(true);
         verificationDescTextArea.setPrefRowCount(5);
         verificationDescTextArea.setPrefColumnCount(40);
+        if (isEditMode) verificationDescTextArea.setText(verification.description());
         var okButtonType = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
         getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
         container.getChildren().add(title);
