@@ -163,30 +163,35 @@ See <https://www.gnu.org/licenses/> for more details.
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.pantsbuild</groupId>
-        <artifactId>jpackage-maven-plugin</artifactId>
-        <version>1.2.0</version>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.6.1</version>
+        <executions>
+          <execution>
+            <id>copy-dependencies</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/lib</outputDirectory>
+              <includeScope>runtime</includeScope>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.3.0</version>
         <configuration>
-          <name>osqa</name>
-          <appVersion>${project.version}</appVersion>
-          <vendor>Samuel Owino</vendor>
-          <destination>${project.build.directory}/jpackage</destination>
-          <mainJar>osqa.jar</mainJar>
-          <mainClass>com.owino.desktop.AppGUI</mainClass>
-          <runtimeImage>${java.home}</runtimeImage>
-          <javaOptions>
-            <option>-Dfile.encoding=UTF-8</option>
-            <option>-Xmx2g</option>
-          </javaOptions>
-          <winDirChooser>true</winDirChooser>
-          <winShortcut>true</winShortcut>
-          <winMenu>true</winMenu>
-          <linuxShortcut>true</linuxShortcut>
-          <linuxMenuGroup>Development</linuxMenuGroup>
-          <macAppName>OSQA</macAppName>
-          <macPackageIdentifier>com.owino.osqa</macPackageIdentifier>
-          <macPackageSigningPrefix>com.owino</macPackageSigningPrefix>
-          <macAppStore>false</macAppStore>
+          <archive>
+            <manifest>
+              <addClasspath>true</addClasspath>
+              <classpathPrefix>lib/</classpathPrefix>
+              <mainClass>com.owino.desktop.AppGUI</mainClass>
+            </manifest>
+          </archive>
         </configuration>
       </plugin>
     </plugins>
