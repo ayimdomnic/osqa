@@ -91,19 +91,30 @@ jobs:
     - name: Build with Maven
       run: mvn -B clean package -DskipTests
 
-    - name: Generate native package
+    - name: Prepare jpackage input
+      shell: bash
       run: |
-        mvn jpackage:jpackage \
-          -Djpackage.type=${{ matrix.package_type }} \
-          -Djpackage.name=osqa \
-          -Djpackage.appVersion=${{ env.version }} \
-          -Djpackage.vendor="Samuel Owino" \
-          -Djpackage.description="Open Source Question Analyzer" \
-          -Djpackage.copyright="© 2026 Samuel Owino" \
-          -Djpackage.licenseFile="${{ github.workspace }}/LICENSE" \
-          -Djpackage.mainJar="osqa.jar" \
-          -Djpackage.mainClass="com.owino.desktop.AppGUI" \
-          -Djpackage.dest="target/jpackage"
+        mkdir -p jpackage-input
+        cp target/osqa.jar jpackage-input/
+        cp -r target/lib jpackage-input/ || true
+
+    - name: Generate native package
+      shell: bash
+      run: |
+        jpackage \
+          --type ${{ matrix.package_type }} \
+          --name osqa \
+          --app-version ${{ env.version }} \
+          --vendor "Samuel Owino" \
+          --description "Open Source Question Analyzer" \
+          --copyright "© 2026 Samuel Owino" \
+          --license-file "${{ github.workspace }}/LICENSE" \
+          --input jpackage-input \
+          --main-jar osqa.jar \
+          --main-class com.owino.desktop.AppGUI \
+          --dest target/jpackage \
+          --java-options '-Xmx2g' \
+          --java-options '-Dfile.encoding=UTF-8'
 
     - name: Generate checksums
       shell: bash
