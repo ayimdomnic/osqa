@@ -119,7 +119,7 @@ jobs:
           --name osqa \
           --app-version ${{ env.version }} \
           --vendor "Samuel Owino" \
-          --description "Open Source Question Analyzer" \
+          --description "OSQA : On-Device Software Quality Assurance" \
           --copyright "© 2026 Samuel Owino" \
           --license-file "${{ github.workspace }}/LICENSE" \
           --input jpackage-input \
@@ -150,7 +150,7 @@ jobs:
     name: Create Release
     needs: build-matrix
     runs-on: ubuntu-latest
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' || github.ref_type == 'tag'
     
     steps:
     - name: Checkout repository
