@@ -25,3 +25,4 @@ settings_db
 products_db
 data:env.properties
 README.md.bak
+env.properties
