@@ -3,6 +3,9 @@
 # OSQA 
 > Pronounced oska
 
+![Java CI](https://github.com/samuelowino/osqa/workflows/Java%20CI%20with%20Maven/badge.svg)
+![Multi-Platform Build](https://github.com/samuelowino/osqa/workflows/Multi-Platform%20Binary%20Generation/badge.svg)
+
 On-Device Software Quality Assurance (OSQA). Software can and should be deterministic 
 
 ## How it works
