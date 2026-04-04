@@ -1,0 +1,13 @@
+{
+  "uuid" : "05308f40-0030-4c5f-a81e-9bd64a1554d2",
+  "productUuid" : "3768fa4b-beda-4f28-8c76-72941ddac4fb",
+  "name" : "Create new feature",
+  "description" : "Feature supports creating new features from the JavaFX form",
+  "priority" : "Critical",
+  "filePath" : "/Users/samuelowino/Documents/osqa/spec/featureCreatenewfeature2026-04-03-11-59-05.json",
+  "testCases" : [ {
+    "uuid" : "d360fe55-0efe-41de-a8e4-f90b9629ae54",
+    "title" : "testcase",
+    "specFile" : "/Users/samuelowino/Documents/osqa/spec/testcase2026-03-23-07-37-47.json"
+  } ]
+}

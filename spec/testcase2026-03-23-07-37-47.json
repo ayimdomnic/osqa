@@ -1,0 +1,10 @@
+{
+  "uuid" : "e3514848-30c8-4361-9649-257610e523bd",
+  "action" : "1. Launch OSQA\n2. Tap \"New Feature\" button on the top right menu\n3. Select product, if one is not already present, create a product for this feayure\n4. Set feature name as \"Change theme to dark mode\"\n5. Set feature description as \"This feature adds the ability to toggle theme from light theme to dark theme\"\n6. Set feature usage instructions:\n\t- Open the app\n\t- Navigate to settings\n\t- Toggle theme from light to dark",
+  "verifications" : [ {
+    "uuid" : "e18a991e-269d-4b6e-adc5-7ecc1104f002",
+    "order" : 0,
+    "description" : "Does the app theme change from light theme to dark?",
+    "verificationStatus" : false
+  } ]
+}
